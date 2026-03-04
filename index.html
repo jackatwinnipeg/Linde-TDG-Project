@@ -10,6 +10,8 @@
     <meta name="theme-color" content="#0b1020" />
 
     <meta name="apple-mobile-web-app-capable" content="yes" />
+
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta
       name="apple-mobile-web-app-status-bar-style"
       content="black-translucent"
@@ -17,6 +19,7 @@
     <meta name="apple-mobile-web-app-title" content="TDG Log" />
 
     <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./assets/favicon.ico" />
     <link rel="stylesheet" href="./css/style.css" />
 
     <title>Ez-Lazy TDG Daily Log</title>
@@ -73,7 +76,11 @@
           "
         >
           <div style="display: flex; align-items: center; gap: 12px">
-            <img src="./assets/Linde-logo.jpg" alt="Linde" style="width:90px;">
+            <img
+              src="./assets/linde-logo.jpg"
+              alt="Linde"
+              style="width: 92px; border-radius: 14px"
+            />
             <h1 style="margin: 0; font-size: 1.5rem">Ez-Lazy TDG Daily Log</h1>
           </div>
         </div>
@@ -165,7 +172,7 @@
                   <option value="8">8</option>
                 </select>
 
-                <button class="btn ok" id="btnCheckIn" type="button" style>
+                <button class="btn ok" id="btnCheckIn" type="button">
                   Check-in
                 </button>
                 <button class="btn warn" id="btnCheckOut" type="button">
@@ -343,67 +350,10 @@
       <p id="toastMsg"></p>
     </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="./js/supabaseConfig.js"></script>
-<script src="./js/supabaseClient.js"></script>
-
-<script src="./js/auth_supabase.js"></script>
-    <script src="./js/app_supabase.js"></script>
-    <!-- Code injected by live-server -->
-    <script>
-      // <![CDATA[  <-- For SVG support
-      if ("WebSocket" in window) {
-        (function () {
-          function refreshCSS() {
-            var sheets = [].slice.call(document.getElementsByTagName("link"));
-            var head = document.getElementsByTagName("head")[0];
-            for (var i = 0; i < sheets.length; ++i) {
-              var elem = sheets[i];
-              var parent = elem.parentElement || head;
-              parent.removeChild(elem);
-              var rel = elem.rel;
-              if (
-                (elem.href && typeof rel != "string") ||
-                rel.length == 0 ||
-                rel.toLowerCase() == "stylesheet"
-              ) {
-                var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, "");
-                elem.href =
-                  url +
-                  (url.indexOf("?") >= 0 ? "&" : "?") +
-                  "_cacheOverride=" +
-                  new Date().valueOf();
-              }
-              parent.appendChild(elem);
-            }
-          }
-          var protocol =
-            window.location.protocol === "http:" ? "ws://" : "wss://";
-          var address =
-            protocol + window.location.host + window.location.pathname + "/ws";
-          var socket = new WebSocket(address);
-          socket.onmessage = function (msg) {
-            if (msg.data == "reload") window.location.reload();
-            else if (msg.data == "refreshcss") refreshCSS();
-          };
-          if (
-            sessionStorage &&
-            !sessionStorage.getItem("IsThisFirstTime_Log_From_LiveServer")
-          ) {
-            console.log("Live reload enabled.");
-            sessionStorage.setItem("IsThisFirstTime_Log_From_LiveServer", true);
-          }
-        })();
-      } else {
-        console.error(
-          "Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.",
-        );
-      }
-      // ]]>
-    </script>
-<script src="./js/auth_supabase.js"></script>
-    <script src="./js/app_supabase.js"></script>
-    <!-- 3) 再加载你的脚本 -->
-    <script src="./js/auth_supabase.js"></script>
-    <script src="./js/app_supabase.js"></script>
-  </body>
+<script defer src="./js/supabaseConfig.js"></script>
+<script defer src="./js/supabaseClient.js"></script>
+<script defer src="./js/auth_supabase.js"></script>
+<script defer src="./js/app_supabase.js"></script>
+<!-- 3) 再加载你的脚本 -->
+</body>
 </html>
