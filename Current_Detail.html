@@ -221,7 +221,7 @@
 
     <!-- ✅ 页面脚本 -->
     <script>
-      const $ = (id) => document.getElementById(id);
+      const byId = (id) => document.getElementById(id);
       const safe = (v) => String(v ?? "").trim();
       const lower = (v) => safe(v).toLowerCase();
 
