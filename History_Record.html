@@ -1,0 +1,490 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#0b1020" />
+    <link rel="stylesheet" href="./css/style.css" />
+    <title>History Records</title>
+
+    <style>
+      .grid4 {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+      }
+      @media (max-width: 960px) {
+        .grid4 {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+      @media (max-width: 560px) {
+        .grid4 {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .rowCard {
+        padding: 12px;
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(0, 0, 0, 0.14);
+        margin-top: 10px;
+      }
+      .rowTop {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .kv {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        opacity: 0.9;
+        font-size: 13px;
+      }
+      .kv span {
+        padding: 2px 8px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.04);
+      }
+      .muted2 {
+        opacity: 0.75;
+        font-size: 13px;
+        margin-top: 6px;
+      }
+
+      .pager {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        justify-content: flex-end;
+        margin-top: 12px;
+        flex-wrap: wrap;
+      }
+      .mono {
+        font-family:
+          ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+          "Liberation Mono", "Courier New", monospace;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <header>
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+          "
+        >
+          <div style="display: flex; align-items: center; gap: 12px">
+            <h1 style="margin: 0; font-size: 1.5rem">History Records</h1>
+            <div class="tag" id="countTag">0 records</div>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap">
+            <button class="btn secondary" id="btnBack" type="button">
+              ← Back
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main class="layout">
+        <section class="card" aria-label="History Filters">
+          <div class="hd">
+            <div class="tag">Query</div>
+          </div>
+          <div class="bd">
+            <div class="grid4">
+              <div>
+                <label for="qText">Keyword</label>
+                <input id="qText" placeholder="Acc No. / Name /" />
+              </div>
+
+              <div>
+                <label for="qDateFrom">Date From</label>
+                <input id="qDateFrom" type="date" />
+              </div>
+
+              <div>
+                <label for="qDateTo">Date To</label>
+                <input id="qDateTo" type="date" />
+              </div>
+
+              <div>
+                <label for="qWeekCycle">Week Cycle</label>
+                <select id="qWeekCycle">
+                  <option value="">All</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                  <option value="6">6</option>
+                  <option value="7">7</option>
+                  <option value="8">8</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid4" style="margin-top: 12px">
+              <div>
+                <label for="qDriver">Driver Number</label>
+                <input id="qDriver" placeholder="D-001 / (auto filled)" />
+              </div>
+              <div>
+                <label for="qVehicle">Vehicle No</label>
+                <input id="qVehicle" placeholder="" />
+              </div>
+              <div>
+                <label for="qAccNo">Account Number</label>
+                <input id="qAccNo" placeholder="1001" />
+              </div>
+              <div>
+                <label for="qCity">City</label>
+                <input id="qCity" placeholder="Winnipeg" />
+              </div>
+            </div>
+
+            <div
+              style="
+                display: flex;
+                gap: 8px;
+                margin-top: 12px;
+                flex-wrap: wrap;
+                justify-content: flex-end;
+              "
+            >
+              <button class="btn" id="btnReset" type="button">Reset</button>
+              <button class="btn secondary" id="btnExportJson" type="button">
+                Export JSON
+              </button>
+              <button class="btn ok" id="btnSearch" type="button">
+                Search
+              </button>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="help">
+              Tips：默认只看本地记录（localStorage:
+              <span class="mono">tdg_records_v3</span
+              >）。本页面仅查询，不支持删除/修改。
+            </div>
+          </div>
+        </section>
+
+        <aside class="card" aria-label="History Result">
+          <div class="hd">
+            <div
+              style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+              "
+            >
+              <div class="tag">Result</div>
+              <div class="muted mono" id="pageText">—</div>
+            </div>
+          </div>
+
+          <div class="bd">
+            <div id="resultBox">
+              <h3 style="margin: 0 0 8px 0">Results show here</h3>
+              <div class="muted">请先点 Search。</div>
+            </div>
+
+            <div class="pager">
+              <button class="btn secondary" id="btnPrev" type="button">
+                Prev
+              </button>
+              <button class="btn secondary" id="btnNext" type="button">
+                Next
+              </button>
+            </div>
+          </div>
+        </aside>
+      </main>
+    </div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./js/supabaseConfig.js"></script>
+<script src="./js/supabaseClient.js"></script>
+
+<script src="./js/auth_supabase.js"></script>
+    <script>
+      const $ = (id) => document.getElementById(id);
+
+      const LS_RECORDS = "tdg_records_v3";
+
+      const PAGE_SIZE = 10;
+      let _all = [];
+      let _filtered = [];
+      let _page = 1;
+
+      function escapeHtml(s) {
+        return String(s ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
+      function loadRecords() {
+        try {
+          const raw = localStorage.getItem(LS_RECORDS) || "[]";
+          const arr = JSON.parse(raw);
+          return Array.isArray(arr) ? arr : [];
+        } catch {
+          return [];
+        }
+      }
+
+      function yyyyMmDdToNum(s) {
+        if (!s) return null;
+        const m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (!m) return null;
+        return Number(m[1]) * 10000 + Number(m[2]) * 100 + Number(m[3]);
+      }
+
+      function norm(s) {
+        return String(s || "")
+          .trim()
+          .toLowerCase();
+      }
+
+      function applyFilters() {
+        const qText = norm($("qText")?.value);
+        const qDateFrom = yyyyMmDdToNum($("qDateFrom")?.value);
+        const qDateTo = yyyyMmDdToNum($("qDateTo")?.value);
+        const qWeekCycle = $("qWeekCycle")?.value || "";
+
+        const qDriver = norm($("qDriver")?.value);
+        const qVehicle = norm($("qVehicle")?.value);
+        const qAccNo = norm($("qAccNo")?.value);
+        const qCity = norm($("qCity")?.value);
+
+        const out = _all.filter((r) => {
+          const dateNum = yyyyMmDdToNum(r.date);
+          if (qDateFrom != null && (dateNum == null || dateNum < qDateFrom))
+            return false;
+          if (qDateTo != null && (dateNum == null || dateNum > qDateTo))
+            return false;
+
+          if (qWeekCycle && String(r.weekCycle || "") !== String(qWeekCycle))
+            return false;
+
+          if (
+            qDriver &&
+            !norm(r.driverNumber).includes(qDriver) &&
+            !norm(r.driverName).includes(qDriver)
+          )
+            return false;
+
+          if (qVehicle && !norm(r.vehicleNo).includes(qVehicle)) return false;
+          if (qAccNo && !norm(r.accountNumber).includes(qAccNo)) return false;
+          if (qCity && !norm(r.accountCity).includes(qCity)) return false;
+
+          if (qText) {
+            const hay = [
+              r.accountNumber,
+              r.accountName,
+              r.accountAddress,
+              r.accountCity,
+              r.accountRoute,
+              r.notes,
+              r.vehicleNo,
+              r.driverNumber,
+              r.driverName,
+            ]
+              .map(norm)
+              .join(" | ");
+            if (!hay.includes(qText)) return false;
+          }
+
+          return true;
+        });
+
+        // 最新的排前（completedAt/updatedAt/date）
+        out.sort((a, b) => {
+          const ta =
+            Date.parse(a.completedAt || a.updatedAt || a.date || "") || 0;
+          const tb =
+            Date.parse(b.completedAt || b.updatedAt || b.date || "") || 0;
+          return tb - ta;
+        });
+
+        _filtered = out;
+        _page = 1;
+        render();
+      }
+
+      function render() {
+        const box = $("resultBox");
+        const countTag = $("countTag");
+        if (countTag) countTag.textContent = `${_filtered.length} records`;
+
+        if (!box) return;
+
+        if (!_filtered.length) {
+          box.innerHTML = `
+            <h3 style="margin:0 0 8px 0;">No result</h3>
+            <div class="muted">没有匹配到记录。</div>
+          `;
+          $("pageText").textContent = "page 0/0";
+          return;
+        }
+
+        const totalPages = Math.ceil(_filtered.length / PAGE_SIZE);
+        if (_page < 1) _page = 1;
+        if (_page > totalPages) _page = totalPages;
+
+        const start = (_page - 1) * PAGE_SIZE;
+        const items = _filtered.slice(start, start + PAGE_SIZE);
+
+        $("pageText").textContent =
+          `page ${_page}/${totalPages} · showing ${start + 1}-${Math.min(start + PAGE_SIZE, _filtered.length)}`;
+
+        const rows = items
+          .map((r) => {
+            const when = r.completedAt || r.updatedAt || "";
+            const delivered = Number(r.deliveredVolume || 0);
+            const tdg = Number(r.tdgVolume || 0);
+            const km =
+              r.totalKm != null && r.totalKm !== "" ? Number(r.totalKm) : null;
+
+            return `
+            <div class="rowCard">
+              <div class="rowTop">
+                <div style="min-width:240px;">
+                  <div style="font-weight:800; font-size:14px;">
+                    ${escapeHtml(r.accountName || "(no account name)")}
+                  </div>
+                  <div class="muted2">
+                    ACC <span class="mono">${escapeHtml(r.accountNumber || "")}</span>
+                    · ${escapeHtml(r.accountCity || "")}
+                    · ${escapeHtml(r.accountRoute || "")}
+                  </div>
+                  <div class="muted2">${escapeHtml(r.accountAddress || "")}</div>
+                </div>
+
+                <div class="kv">
+                  <span>${escapeHtml(r.date || "—")}</span>
+                  <span>Cycle ${escapeHtml(r.weekCycle ?? "—")}</span>
+                  <span>Vehicle ${escapeHtml(r.vehicleNo || "—")}</span>
+                  <span>Delivered ${escapeHtml(delivered)}</span>
+                  <span>TDG ${escapeHtml(tdg)}</span>
+                  ${km != null ? `<span>KM ${escapeHtml(km)}</span>` : ""}
+                </div>
+              </div>
+
+              <div class="muted2" style="margin-top:10px;">
+                Driver: <span class="mono">${escapeHtml(r.driverNumber || "")}</span>
+                ${escapeHtml(r.driverName || "")}
+                ${when ? `· <span class="mono">${escapeHtml(when)}</span>` : ""}
+              </div>
+
+              ${r.notes ? `<div class="muted2">Notes: ${escapeHtml(r.notes)}</div>` : ""}
+            </div>
+          `;
+          })
+          .join("");
+
+        box.innerHTML = rows;
+
+        $("btnPrev").disabled = _page <= 1;
+        $("btnNext").disabled = _page >= totalPages;
+      }
+
+      function resetFilters() {
+        $("qText").value = "";
+        $("qDateFrom").value = "";
+        $("qDateTo").value = "";
+        $("qWeekCycle").value = "";
+        $("qVehicle").value = "";
+        $("qAccNo").value = "";
+        $("qCity").value = "";
+
+        // driver 默认保留当前登录司机（更符合使用场景）
+        applyFilters();
+      }
+
+      function exportFilteredJson() {
+        const data = _filtered;
+        const blob = new Blob(
+          [
+            JSON.stringify(
+              { exportedAt: new Date().toISOString(), items: data },
+              null,
+              2,
+            ),
+          ],
+          { type: "application/json" },
+        );
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `tdg_history_${new Date().toISOString().slice(0, 10)}.json`;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }
+
+      document.addEventListener("DOMContentLoaded", () => {
+        // Auth gate
+        const sess = window.TDG_AUTH?.requireAuth?.();
+        if (!sess) return;
+
+        // 默认把 driverNumber 带上（用户最常查自己的记录）
+        const dn = (sess.driverNumber || sess.username || "").trim();
+        if (dn) $("qDriver").value = dn;
+
+        _all = loadRecords();
+        _filtered = _all.slice();
+        applyFilters();
+
+        $("btnBack").addEventListener(
+          "click",
+          () => (window.location.href = "./index.html"),
+          { passive: true },
+        );
+        $("btnSearch").addEventListener("click", applyFilters, {
+          passive: true,
+        });
+        $("btnReset").addEventListener("click", resetFilters, {
+          passive: true,
+        });
+        $("btnExportJson").addEventListener("click", exportFilteredJson, {
+          passive: true,
+        });
+
+        $("btnPrev").addEventListener(
+          "click",
+          () => {
+            _page--;
+            render();
+          },
+          { passive: true },
+        );
+        $("btnNext").addEventListener(
+          "click",
+          () => {
+            _page++;
+            render();
+          },
+          { passive: true },
+        );
+      });
+    </script>
+  </body>
+</html>

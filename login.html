@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#0b1020" />
+    <link rel="stylesheet" href="./css/style.css" />
+    <title>TDG Log - Login</title>
+    <style>
+      .login-wrap {
+        max-width: 480px;
+        margin: 0 auto;
+        padding: 18px;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 16px 0 8px;
+      }
+      .brand img {
+        width: 120px;
+        border-radius: 14px;
+      }
+      .muted {
+        opacity: 0.75;
+      }
+      .row2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      .btn.full {
+        width: 100%;
+      }
+      .tiny {
+        font-size: 12px;
+        opacity: 0.7;
+      }
+      .error {
+        margin-top: 10px;
+        padding: 10px 12px;
+        border-radius: 14px;
+        border: 1px solid rgba(255, 80, 80, 0.25);
+        background: rgba(255, 0, 0, 0.08);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <main class="login-wrap">
+        <section class="card" aria-label="Login">
+          <div class="hd">
+            <div class="brand">
+              <img src="./assets/linde-logo.jpg" alt="Logo" />
+              <div>
+                <div class="tag">Ez-Lazy TDG Daily Log</div>
+                <h1 style="margin: 6px 0 0; font-size: 20px">Login</h1>
+                <div class="muted" style="margin-top: 6px">
+                  请使用账号密码登录（本地版 Demo，可后续接后端）。
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bd">
+            <div class="grid2">
+              <div>
+                <label for="username">Username</label>
+                <input
+                  id="username"
+                  autocomplete="username"
+                  placeholder="admin"
+                />
+              </div>
+              <div>
+                <label for="password">Password</label>
+                <input
+                  id="password"
+                  type="password"
+                  autocomplete="current-password"
+                  placeholder="Admin@1234"
+                />
+              </div>
+            </div>
+
+            <div class="row2" style="margin-top: 12px">
+              <button class="btn ok full" id="btnLogin" type="button">
+                On-Duty
+              </button>
+              <button
+                class="btn secondary full"
+                id="btnToAdmin"
+                type="button"
+                title="需要 admin 权限"
+              >
+                Admin Panel
+              </button>
+            </div>
+
+            <div id="msg" style="display: none" class="error"></div>
+
+            <div class="divider"></div>
+            <div class="tiny">
+              默认管理员：<b>admin</b> /
+              <b>Admin@1234</b>（首次登录后建议到后台改密码）
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="./js/supabaseConfig.js"></script>
+    <script src="./js/supabaseClient.js"></script>
+
+    <script src="./js/auth_supabase.js"></script>
+    <script>
+      const $ = (id) => document.getElementById(id);
+      const showMsg = (t) => {
+        $("msg").style.display = "block";
+        $("msg").textContent = t;
+      };
+      const hideMsg = () => {
+        $("msg").style.display = "none";
+        $("msg").textContent = "";
+      };
+
+      async function doLogin(goTo) {
+        hideMsg();
+        const u = $("username").value;
+        const p = $("password").value;
+        const r = await window.TDG_AUTH.authenticate(u, p);
+        if (!r.ok) return showMsg(r.msg || "登录失败");
+        window.TDG_AUTH.syncProfileToLegacyLS();
+        window.location.href = goTo || "./index.html";
+      }
+
+      $("btnLogin").addEventListener("click", () => doLogin("./index.html"));
+      $("btnToAdmin").addEventListener("click", async () => {
+        await doLogin("./admin.html");
+      });
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") $("btnLogin").click();
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#0b1020" />
+    <link rel="stylesheet" href="./css/style.css" />
+    <title>TDG Admin</title>
+    <style>
+      .topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      .topbar .left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .topbar img {
+        width: 92px;
+        border-radius: 14px;
+      }
+      .tabs {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .tab {
+        padding: 8px 12px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        cursor: pointer;
+        user-select: none;
+      }
+      .tab.active {
+        border-color: rgba(150, 210, 255, 0.45);
+        background: rgba(150, 210, 255, 0.1);
+      }
+      .grid-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 10px;
+      }
+      .table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0 10px;
+      }
+      .table th {
+        font-size: 12px;
+        text-align: left;
+        opacity: 0.75;
+        padding: 0 10px;
+      }
+      .table td {
+        padding: 12px 10px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(0, 0, 0, 0.14);
+      }
+      .table tr td:first-child {
+        border-top-left-radius: 16px;
+        border-bottom-left-radius: 16px;
+      }
+      .table tr td:last-child {
+        border-top-right-radius: 16px;
+        border-bottom-right-radius: 16px;
+      }
+      .chip {
+        font-size: 12px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        display: inline-block;
+      }
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 1); /* 弹出框背景不透明 */
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+      }
+      .modal {
+        max-width: 720px;
+        width: 100%;
+      }
+      .modal .card {
+        margin: 0;
+      }
+      .row2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      .row3 {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 10px;
+      }
+      .right-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+      .muted {
+        opacity: 0.75;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <div class="topbar">
+          <div class="left">
+            <img src="./assets/linde-logo.jpg" alt="Logo" />
+            <div>
+              <h1 style="margin: 6px 0 0">Ez-Lazy Management</h1>
+              <div class="muted" id="who" style="margin-top: 6px"></div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="layout">
+        <section class="card" style="width: 100%">
+          <div class="hd">
+            <div class="tabs">
+              <div class="tab active" data-tab="users">Users</div>
+              <div class="tab" data-tab="customers">Customers</div>
+            </div>
+            <div class="right-actions">
+              <a class="btn secondary" href="./index.html">Go Back</a>
+              <button class="btn warn" id="btnLogout" type="button">
+                Logout
+              </button>
+            </div>
+          </div>
+
+          <div class="bd">
+            <div id="panel-users">
+              <label for="userSearch"
+                >Search（Employee Number / Employee Name ）</label
+              >
+              <input id="userSearch" />
+
+              <div class="grid-actions">
+                <button class="btn ok" id="btnAddUser" type="button">
+                  Add User
+                </button>
+              </div>
+              <div class="divider"></div>
+              <div id="usersTableWrap"></div>
+            </div>
+
+            <div id="panel-customers" style="display: none">
+              <label for="custSearch"
+                >Search（Account No. / Name / Address）</label
+              >
+              <input id="custSearch" placeholder="1001 / Hydro / Winnipeg" />
+
+              <div class="grid-actions">
+                <button class="btn ok" id="btnAddCustomer" type="button">
+                  Add Customer
+                </button>
+
+                <label class="btn secondary" style="cursor: pointer">
+                  Loading from CSV
+                  <input
+                    id="importCustomersCsv"
+                    type="file"
+                    accept=".csv,text/csv"
+                    style="display: none"
+                  />
+                </label>
+              </div>
+
+              <div class="divider"></div>
+              <div id="customersTableWrap"></div>
+            </div>
+
+            <div id="panel-tools" style="display: none">
+              <div class="tag">常用工具</div>
+              <div class="grid-actions" style="margin-top: 12px">
+                <button class="btn warn" id="btnDangerResetAll" type="button">
+                  危险：清空所有本地数据
+                </button>
+              </div>
+              <div class="muted" style="margin-top: 10px">
+                说明：你当前项目大量使用
+                localStorage（客户库、草稿、Yesterday、Week cycle
+                等）。此按钮会全部清空。
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div class="modal-backdrop" id="modalBackdrop" aria-hidden="true">
+      <div class="modal">
+        <section class="card" aria-label="Edit dialog">
+          <div class="hd">
+            <div class="tag" id="modalTitle">Edit</div>
+          </div>
+          <div class="bd" id="modalBody"></div>
+        </section>
+      </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="./js/supabaseConfig.js"></script>
+    <script src="./js/supabaseClient.js"></script>
+    <script src="./js/auth_supabase.js"></script>
+    <script src="./js/admin.js"></script>
+  </body>
+</html>

@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#0b1020" />
+
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta name="apple-mobile-web-app-title" content="TDG Log" />
+
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="stylesheet" href="./css/style.css" />
+
+    <title>Ez-Lazy TDG Daily Log</title>
+    <style>
+      .toast {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: rgba(11, 16, 32, 0.95);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 16px;
+        max-width: 300px;
+        display: none;
+        z-index: 1000;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      }
+      .toast strong {
+        display: block;
+        margin-bottom: 4px;
+        color: #96d2ff;
+      }
+      .toast p {
+        margin: 0;
+        font-size: 14px;
+        opacity: 0.8;
+      }
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      #weekCycleRow {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      #weekCycleRow select {
+        flex: 1;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <header>
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+          "
+        >
+          <div style="display: flex; align-items: center; gap: 12px">
+            <img
+              src="./assets/linde-logo.jpg"
+              alt="Linde"
+              style="width: 92px; border-radius: 14px"
+            />
+            <h1 style="margin: 0; font-size: 1.5rem">Ez-Lazy TDG Daily Log</h1>
+          </div>
+        </div>
+      </header>
+
+      <main class="layout">
+        <section class="card" aria-label="TDG Form">
+          <div class="hd">
+            <div style="display: flex; gap: 8px; flex-wrap: wrap"></div>
+          </div>
+          <div class="bd">
+            <div class="grid2">
+              <div>
+                <label for="driverNumber">Driver's Number</label>
+                <input id="driverNumber" autocomplete="off" inputmode="text" />
+              </div>
+              <div>
+                <label for="driverName">Driver's Name</label>
+                <input id="driverName" autocomplete="name" inputmode="text" />
+              </div>
+            </div>
+
+            <div class="grid3" style="margin-top: 12px">
+              <div>
+                <label for="date">Date</label>
+                <input id="date" type="date" />
+              </div>
+              <div>
+                <label for="vehicleNo">Vehicle No</label>
+                <input id="vehicleNo" autocomplete="off" inputmode="text" />
+              </div>
+              <div>
+                <label for="tdgVolume">TDG Volume</label>
+                <input
+                  id="tdgVolume"
+                  type="number"
+                  min="0"
+                  step="1"
+                  inputmode="numeric"
+                />
+              </div>
+            </div>
+            <div class="grid3" style="margin-top: 12px">
+              <div>
+                <label for="startKm">Start KM</label>
+                <input
+                  id="startKm"
+                  type="number"
+                  min="0"
+                  step="1"
+                  inputmode="numeric"
+                  placeholder="0"
+                />
+              </div>
+
+              <div>
+                <label for="endKm">End KM</label>
+                <input
+                  id="endKm"
+                  type="number"
+                  min="0"
+                  step="1"
+                  inputmode="numeric"
+                  placeholder="0"
+                />
+              </div>
+
+              <div>
+                <label for="totalKm">Total KM</label>
+                <input
+                  id="totalKm"
+                  type="number"
+                  readonly
+                  style="background: rgba(255, 255, 255, 0.05)"
+                />
+              </div>
+            </div>
+            <div style="margin-top: 12px">
+              <label for="weekCycle">Week Cycle</label>
+              <div style="display: flex; gap: 80px; align-items: center">
+                <select id="weekCycle" style="flex: 1; max-width: 120px">
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                  <option value="6">6</option>
+                  <option value="7">7</option>
+                  <option value="8">8</option>
+                </select>
+
+                <button class="btn ok" id="btnCheckIn" type="button" style>
+                  Check-in
+                </button>
+                <button class="btn warn" id="btnCheckOut" type="button">
+                  Check-out
+                </button>
+              </div>
+              <div class="help" id="shiftTimeText" style="margin-top: 6px">
+                Shift Time：—
+              </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="grid2">
+              <div>
+                <label for="accountNumber">Account Number</label>
+                <input
+                  id="accountNumber"
+                  autocomplete="off"
+                  inputmode="text"
+                  placeholder="Auto/Manual Fill-in"
+                />
+              </div>
+              <div>
+                <label for="accountName">Account Name</label>
+                <input
+                  id="accountName"
+                  autocomplete="organization"
+                  inputmode="text"
+                  placeholder="Auto/Manual Fill-in"
+                />
+              </div>
+            </div>
+
+            <div style="margin-top: 12px">
+              <label for="accountAddress">Account Address</label>
+              <input
+                id="accountAddress"
+                autocomplete="street-address"
+                inputmode="text"
+                placeholder="Auto/Manual Fill-in"
+              />
+            </div>
+            <div class="grid2" style="margin-top: 12px">
+              <div>
+                <label for="accountCity">City</label>
+                <input
+                  id="accountCity"
+                  autocomplete="address-level2"
+                  inputmode="text"
+                  placeholder="Auto/Manual Fill-in"
+                />
+              </div>
+              <div>
+                <label for="accountRoute">Route</label>
+                <input
+                  id="accountRoute"
+                  autocomplete="off"
+                  inputmode="text"
+                  placeholder="Auto/Manual Fill-in"
+                />
+              </div>
+            </div>
+            <div class="grid2" style="margin-top: 12px">
+              <div>
+                <div style="margin-bottom: 10px">
+                  <button
+                    class="btn ok"
+                    id="btnArrive"
+                    type="button"
+                    style="width: 100%"
+                  >
+                    Confirm Arrive
+                  </button>
+                  <div
+                    class="help"
+                    id="arrivalTimeText"
+                    style="margin-top: 6px"
+                  >
+                    Arrival Time：—
+                  </div>
+                </div>
+
+                <label for="deliveredVolume">Delivered Volume</label>
+                <input
+                  id="deliveredVolume"
+                  type="number"
+                  min="0"
+                  step="1"
+                  inputmode="numeric"
+                  placeholder="Example：2400"
+                />
+              </div>
+
+              <div>
+                <label for="notes">Comments / Notes（Optional）</label>
+                <textarea
+                  id="notes"
+                  rows="3"
+                  placeholder="Example：unsafe working conditions; customer complaints; etc."
+                ></textarea>
+              </div>
+            </div>
+
+            <div
+              style="
+                display: flex;
+                gap: 8px;
+                justify-content: flex-end;
+                margin-top: 16px;
+              "
+            >
+              <button class="btn ok" id="btnDone" type="button">
+                Add Record
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <aside class="card" aria-label="Customer Search">
+          <div class="hd">
+            <div
+              style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+              "
+            >
+              <div class="tag">Search Customer</div>
+              <div></div>
+            </div>
+          </div>
+
+          <div class="bd">
+            <label for="searchBox"
+              >ACC No. / Customer Name / Address Search</label
+            >
+            <input
+              id="searchBox"
+              placeholder="Example：1001 / Hydro / Winnipeg"
+            />
+
+            <div style="display: flex; gap: 8px; margin-top: 10px">
+              <button class="btn" id="btnSearch" type="button">Search</button>
+              <button class="btn secondary" id="btnClearSearch" type="button">
+                Clear
+              </button>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="result" id="resultBox">
+              <h3 style="margin: 0 0 8px 0">Search result shows here</h3>
+              <div class="muted">还没有搜索。你可以先点“加载演示客户库”。</div>
+            </div>
+
+            <div
+              style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px"
+            >
+              <button class="btn secondary" id="btnToday" type="button">
+                Current Details
+              </button>
+              <button class="btn secondary" id="btnHistory" type="button">
+                History Records
+              </button>
+              <button class="btn" id="btnLogout" type="button">Off-Duty</button>
+            </div>
+          </div>
+        </aside>
+      </main>
+    </div>
+
+    <div class="toast" id="toast" aria-live="polite">
+      <strong id="toastTitle"></strong>
+      <p id="toastMsg"></p>
+    </div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./js/supabaseConfig.js"></script>
+<script src="./js/supabaseClient.js"></script>
+
+<script src="./js/auth_supabase.js"></script>
+    <script src="./js/app_supabase.js"></script>
+    <!-- Code injected by live-server -->
+    <script>
+      // <![CDATA[  <-- For SVG support
+      if ("WebSocket" in window) {
+        (function () {
+          function refreshCSS() {
+            var sheets = [].slice.call(document.getElementsByTagName("link"));
+            var head = document.getElementsByTagName("head")[0];
+            for (var i = 0; i < sheets.length; ++i) {
+              var elem = sheets[i];
+              var parent = elem.parentElement || head;
+              parent.removeChild(elem);
+              var rel = elem.rel;
+              if (
+                (elem.href && typeof rel != "string") ||
+                rel.length == 0 ||
+                rel.toLowerCase() == "stylesheet"
+              ) {
+                var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, "");
+                elem.href =
+                  url +
+                  (url.indexOf("?") >= 0 ? "&" : "?") +
+                  "_cacheOverride=" +
+                  new Date().valueOf();
+              }
+              parent.appendChild(elem);
+            }
+          }
+          var protocol =
+            window.location.protocol === "http:" ? "ws://" : "wss://";
+          var address =
+            protocol + window.location.host + window.location.pathname + "/ws";
+          var socket = new WebSocket(address);
+          socket.onmessage = function (msg) {
+            if (msg.data == "reload") window.location.reload();
+            else if (msg.data == "refreshcss") refreshCSS();
+          };
+          if (
+            sessionStorage &&
+            !sessionStorage.getItem("IsThisFirstTime_Log_From_LiveServer")
+          ) {
+            console.log("Live reload enabled.");
+            sessionStorage.setItem("IsThisFirstTime_Log_From_LiveServer", true);
+          }
+        })();
+      } else {
+        console.error(
+          "Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.",
+        );
+      }
+      // ]]>
+    </script>
+<script src="./js/auth_supabase.js"></script>
+    <script src="./js/app_supabase.js"></script>
+    <!-- 3) 再加载你的脚本 -->
+    <script src="./js/auth_supabase.js"></script>
+    <script src="./js/app_supabase.js"></script>
+  </body>
+</html>

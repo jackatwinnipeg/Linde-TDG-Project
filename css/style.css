@@ -1,0 +1,425 @@
+:root{
+  /* Linde-inspired blues (KEEP - do not change) */
+  --brand-950:#002244;
+  --brand-900:#003060;
+  --brand-850:#004070;
+  --brand-800:#005090;
+  --brand-700:#0060a0;
+  --brand-600:#0070b0;
+  --brand-500:#0080c0;
+
+  --bg: var(--brand-950);
+  --card: rgba(18, 34, 68, .72);
+  --text:#eaf2ff;
+  --muted:#a8bddf;
+
+  --line: rgba(255,255,255,.10);
+  --shadow: 0 12px 36px rgba(0,0,0,.38);
+  --radius: 18px;
+
+  /* Accent = Linde bright blue (KEEP) */
+  --accent: var(--brand-500);
+
+  /* Status colors (KEEP) */
+  --ok:#55d38a;
+  --warn:#ffd166;
+  --bad:#ff6b6b;
+
+  /* --- Layout tokens (FIX: previously missing vars) --- */
+  --gap: 12px;
+  --tap: 48px;                 /* iPad-friendly tap target */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bot: env(safe-area-inset-bottom, 0px);
+}
+
+*{ box-sizing:border-box; }
+html, body { height: 100%; }
+
+html{
+  background: var(--bg);           /* 兜底，防止回弹露底色块 */
+}
+
+body{
+  min-height: 100vh;               /* 确保铺满视口 */
+  background-repeat: no-repeat;    /* 防止渐变“重复”产生分界 */
+  background-size: cover;          /* 大屏/拉伸时更平滑 */
+  background-attachment: fixed;    /* 固定背景，减少拉伸时的“断层感” */
+  overscroll-behavior-y: none;     /* 可选：减少 iOS/浏览器回弹露底 */
+}
+
+.container{
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 12px 14px;
+}
+
+/* ---------- Header (more "enterprise", more stable) ---------- */
+header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 12px;
+  padding: 10px 6px 14px;
+}
+
+.header-left{
+  display:flex;
+  align-items:center;
+  gap: 16px;
+  min-width: 0;
+}
+
+.logo{
+  display:block;
+  height: 100px;               /* consistent height on iPad */
+  width: auto;
+  border-radius: 8px;
+}
+
+header h1{
+  margin:0;
+  font-size: 45px;            /* iPad readable */
+  font-weight: 800;
+  letter-spacing: .3px;
+  line-height: 1.05;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
+}
+
+/* ---------- Pills / Tags ---------- */
+.tag{
+  font-size: 12px;
+  color: var(--muted);
+  border: 1px solid rgba(255,255,255,.14);
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(0,0,0,.20);
+  white-space: nowrap;
+}
+
+.pill{
+  display:inline-flex;
+  align-items:center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  user-select:none;
+
+  /* keep same blue feeling */
+  background: rgba(0,128,192,.14);
+  border: 1px solid rgba(0,128,192,.28);
+  color:#cfeaff;
+}
+.pill.off{
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.14);
+  color: var(--muted);
+}
+
+/* ---------- Layout ---------- */
+.layout{
+  display:grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 14px;
+  align-items:start;
+}
+@media (max-width: 980px){
+  .layout{ grid-template-columns: 1fr; }
+}
+
+/* ---------- Cards (more restrained enterprise glass) ---------- */
+.card{
+  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow:hidden;
+}
+
+.card .hd{
+  padding: 14px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.card .bd{ padding: 14px; }
+
+/* ---------- Rows / Grids ---------- */
+.row{
+  display:flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items:center;
+}
+
+.grid2{
+  display:grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--gap);
+}
+.grid3{
+  display:grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--gap);
+}
+@media (max-width: 720px){
+  .grid2, .grid3{ grid-template-columns: 1fr; }
+}
+
+/* ---------- Form controls ---------- */
+label{
+  display:block;
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0 0 6px;
+}
+
+input, textarea, select{
+  width:100%;
+  min-height: var(--tap);
+  padding: 12px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(0,0,0,.18);
+  color: var(--text);
+  outline: none;
+
+  /* IMPORTANT: iOS avoid zoom if >=16px */
+  font-size: 16px;
+}
+
+textarea{
+  min-height: 110px;
+  resize: vertical;
+}
+
+input:focus, textarea:focus, select:focus{
+  border-color: rgba(0,128,192,.80);
+  box-shadow:
+    0 0 0 3px rgba(0,128,192,.20),
+    0 10px 30px rgba(0,128,192,.10);
+}
+
+/* Disabled (clear enterprise feedback) */
+input:disabled, textarea:disabled, select:disabled{
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+/* ---------- Help / Divider / Result ---------- */
+.help{
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 8px;
+  line-height: 1.35;
+}
+
+.divider{
+  height:1px;
+  background: rgba(255,255,255,.10);
+  margin: 14px 0;
+}
+
+.result{
+  border: 1px dashed rgba(0,128,192,.35);
+  border-radius: 16px;
+  padding: 12px;
+  background: rgba(0,0,0,.16);
+}
+.result h3{
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+.muted{
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+/* ---------- Buttons ---------- */
+.btn{
+  cursor:pointer;
+  border:none;
+  border-radius: 14px;
+  min-height: var(--tap);
+  padding: 10px 14px;
+  font-weight: 700;
+  font-size: 15px;
+  user-select:none;
+  touch-action: manipulation;
+
+  /* keep your button look (no palette change) */
+  background: linear-gradient(180deg, rgba(0,128,192,1) 0%, rgba(0,96,160,1) 100%);
+  color: #071022;
+  box-shadow: 0 10px 22px rgba(0,128,192,.20);
+}
+.btn:hover{ filter: brightness(1.05); }
+
+.btn.secondary{
+  background: rgba(255,255,255,.10);
+  border: 1px solid rgba(255,255,255,.16);
+  color: var(--text);
+  box-shadow: none;
+}
+
+/* Status buttons keep the same colors; only shadow differs */
+.btn.ok{
+  background: var(--ok);
+  box-shadow: 0 10px 22px rgba(85,211,138,.18);
+}
+.btn.warn{
+  background: var(--warn);
+  box-shadow: 0 10px 22px rgba(255,209,102,.15);
+}
+.btn.bad{
+  background: var(--bad);
+  color:#1a0b0b;
+  box-shadow: 0 10px 22px rgba(255,107,107,.15);
+}
+.btn:disabled{
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+/* Arrive disabled state (requested) */
+#btnArrive:disabled{
+  opacity: .60;
+  cursor: not-allowed;
+  filter: grayscale(.10);
+}
+
+/* ---------- WeekCycle row: never wrap (your requirement) ---------- */
+#weekCycleRow{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  flex-wrap: nowrap;
+}
+#weekCycleRow #weekCycle{
+  flex: 1;
+  min-width: 120px;
+}
+/* 下拉列表背景 */
+#weekCycle option {
+  background: #001F3D;
+  color: #ffffff;
+}
+
+#btnCheckIn, #btnCheckOut{
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-height: 44px;           /* slightly smaller is ok */
+  padding: 10px 14px;
+}
+
+/* ---------- Bottom sticky action bar (iPad enterprise) ---------- */
+
+
+/* ---------- Toast ---------- */
+.toast{
+  position: fixed;
+  right: 14px;
+  bottom: calc(96px + var(--safe-bot));
+  background: rgba(18,26,51,.95);
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: 16px;
+  padding: 12px 14px;
+  max-width: 360px;
+  box-shadow: var(--shadow);
+  display: none;
+  z-index: 1000;
+}
+.toast strong{
+  display:block;
+  margin-bottom: 4px;
+}
+.toast p{
+  margin:0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+/* --- Actions panel under Customer Search --- */
+.panel-actions{
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)); /* iPad 两列更像企业系统 */
+  gap: 10px;
+}
+
+.panel-actions .btn{
+  width: 100%;
+  justify-content: center;
+}
+
+/* iPad 横屏更宽时可四列一行（可选） */
+@media (min-width: 980px){
+  .panel-actions{
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+/* Icon inside buttons: inherit color = enterprise look */
+.btn-ico{
+  display:inline-flex;
+  width: 18px;
+  height: 18px;
+  margin-right: 8px;
+  align-items:center;
+  justify-content:center;
+}
+.btn-ico svg{
+  width: 18px;
+  height: 18px;
+  fill: currentColor;      /* 关键：跟随文字颜色上色 */
+}
+
+/* 如果你希望 secondary 按钮图标更“蓝一点”，但不改配色体系： */
+.btn.secondary{
+  color: var(--text);      /* 文字白 */
+}
+/* 只给 secondary 的图标做品牌蓝（可选） */
+.btn.secondary .btn-ico{
+  color: var(--accent);    /* 用你现有的品牌蓝，不算改配色 */
+}
+
+/* ---------- Table polish (reduce blocky cells; keeps palette) ---------- */
+.table{ width:100%; border-collapse: separate; border-spacing: 0 8px; }
+.table thead th{ padding: 0 10px 6px; }
+.table tbody td{
+  border: 1px solid rgba(255,255,255,.08);
+  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(0,0,0,.10));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05), 0 10px 26px rgba(0,0,0,.18);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.table tbody tr:hover td{ border-color: rgba(0,128,192,.35); }
+/* Fix Route dropdown text visibility */
+
+.modal select,
+.modal option {
+  color: #ffffff !important;
+}
+
+/* dropdown list background */
+.modal option {
+  background: #003060;
+}
+
+/* selected item */
+.modal select {
+  background-color: rgba(255,255,255,0.08);
+}
+/* ===== TDG Print Table Column Alignment ===== */
+table tbody td:nth-child(4),
+table thead th:nth-child(4),
+table tbody td:nth-child(5),
+table thead th:nth-child(5),
+table tbody td:nth-child(6),
+table thead th:nth-child(6) {
+  text-align: center;
+}

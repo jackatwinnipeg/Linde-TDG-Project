@@ -1,0 +1,627 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>TDG Print (1:1)</title>
+
+    <style>
+      /* ===== 打印：A4 横向 + 小边距（更像原纸张）===== */
+      @page {
+        size: A4 landscape;
+        margin: 8mm;
+      }
+      @media print {
+        .no-print {
+          display: none !important;
+        }
+        body {
+          background: #fff;
+        }
+      }
+
+      body {
+        margin: 0;
+        background: #eee;
+        font-family: Arial, Helvetica, sans-serif;
+        color: #000;
+      }
+      .sheet {
+        width: 277mm; /* A4 landscape content area roughly (depends on margins); ok for print */
+        background: #fff;
+        margin: 12px auto;
+        padding: 0;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+      }
+
+      /* ===== 关键：用黑色细线框，接近 PDF 工业表单风格 ===== */
+      .box {
+        border: 1px solid #000;
+      }
+      .row {
+        display: flex;
+      }
+      .col {
+        display: flex;
+        flex-direction: column;
+      }
+      .p6 {
+        padding: 6px;
+      }
+      .p8 {
+        padding: 8px;
+      }
+      .p10 {
+        padding: 10px;
+      }
+      .tight {
+        line-height: 1.1;
+      }
+      .small {
+        font-size: 10px;
+      }
+      .xs {
+        font-size: 9px;
+      }
+      .title {
+        font-weight: 700;
+        font-size: 14px;
+        text-align: center;
+        padding: 6px 0;
+      }
+      .muted {
+        opacity: 0.9;
+      }
+      .label {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: none;
+      }
+      .value {
+        font-size: 11px;
+        min-height: 14px;
+      }
+      .gridline {
+        border-top: 1px solid #000;
+      }
+      .gridline-v {
+        border-left: 1px solid #000;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+        font-size: 10px;
+      }
+      th,
+      td {
+        border: 1px solid #000;
+        padding: 2px 3px;
+        vertical-align: top;
+        word-wrap: break-word;
+      }
+      th {
+        font-weight: 700;
+        text-align: left;
+      }
+      .center {
+        text-align: center;
+      }
+      .right {
+        text-align: right;
+      }
+
+      /* ✅ 让 Delivered / Balance / Notes 三列（含表头+数据）居中 */
+      table thead th:nth-child(4),
+      table tbody td:nth-child(4),
+      table thead th:nth-child(5),
+      table tbody td:nth-child(5),
+      table thead th:nth-child(6),
+      table tbody td:nth-child(6) {
+        text-align: center;
+      }
+
+      /* 顶部工具条（不打印） */
+      .toolbar {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 12px;
+        position: sticky;
+        top: 0;
+        background: #fff;
+        border-bottom: 1px solid #ddd;
+      }
+      .btn {
+        border: 1px solid #111;
+        background: #111;
+        color: #fff;
+        border-radius: 10px;
+        padding: 10px 12px;
+        font-weight: 700;
+        min-height: 44px;
+        cursor: pointer;
+      }
+      .btn.secondary {
+        background: #fff;
+        color: #111;
+      }
+      .warn {
+        color: #b00020;
+        font-weight: 700;
+      }
+
+      /* 可选：如果你导出一张 PDF 背景图，可在这里做水印底图（肉眼更像） */
+      .bg-watermark {
+        position: relative;
+      }
+      .bg-watermark::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        /* 把下面 url 换成你从 PDF 导出的底图（可选） */
+        /* background: url('./assets/tdg_template_page1.png') no-repeat center/contain; */
+        opacity: 0.12;
+        pointer-events: none;
+      }
+      .bg-watermark > * {
+        position: relative;
+        z-index: 1;
+      }
+
+      /* ✅ 右侧信息区：最优方案（Grid 固定两列，一行显示 Label: Value） */
+      .kv {
+        display: grid;
+        grid-template-columns: 92px 1fr; /* 左列固定宽度（你也可调到 100/110） */
+        align-items: center;
+        column-gap: 6px;
+      }
+      .kv .label {
+        margin: 0;
+        white-space: nowrap;
+      }
+      .kv .value {
+        margin: 0;
+        text-align: left; /* 如果你希望值靠右，改成 right */
+        min-height: 14px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="toolbar no-print">
+      <div>
+        <b>TDG Print (HTML 1:1)</b>
+      </div>
+      <div style="display: flex; gap: 10px; flex-wrap: wrap">
+        <button class="btn secondary" id="btnClose" type="button">Close</button>
+        <button class="btn" id="btnPrint" type="button">
+          Print / Save PDF
+        </button>
+      </div>
+    </div>
+
+    <div class="sheet box bg-watermark">
+      <!-- ===== 顶部标题区 ===== -->
+      <div class="title box">
+        Transportation of Dangerous Goods Shipping Document
+      </div>
+
+      <div class="row box">
+        <!-- 左：公司/ERAP -->
+        <div class="col p8" style="flex: 1">
+          <div class="gridline" style="margin-top: 6px"></div>
+          <div class="row" style="gap: 10px; margin-top: 6px">
+            <div style="flex: 1">
+              <div class="label">Consignor:</div>
+              <div class="value" id="consignorName">Linde Canada Inc.</div>
+            </div>
+            <div style="width: 200px">
+              <div class="label">CHECK LOADED PRODUCT</div>
+              <div class="small">
+                <label><input type="checkbox" id="chkO2" /> O2</label>&nbsp;
+                <label><input type="checkbox" id="chkN2" /> N2</label>&nbsp;
+                <label><input type="checkbox" id="chkAr" /> Ar</label>&nbsp;
+                <label><input type="checkbox" id="chkCO2" /> CO2</label>
+              </div>
+            </div>
+          </div>
+          <div class="small tight">
+            <b>ERAP</b> 2-0821 AND 24 HOUR NUMBER: <b>800-363-0042</b>
+          </div>
+          <div class="gridline" style="margin-top: 6px"></div>
+          <div class="row" style="gap: 10px; margin-top: 6px">
+            <div style="flex: 1">
+              <div class="label">PRODUCT DESCRIPTION</div>
+              <div class="xs tight">
+                UN1073, OXYGEN, REFRIGERATED LIQUID, 2.2(5.1)<br />
+                UN1977, NITROGEN, REFRIGERATED LIQUID, 2.2<br />
+                UN1951, ARGON, REFRIGERATED LIQUID, 2.2<br />
+                UN2187, CARBON DIOXIDE, REFRIGERATED LIQUID, 2.2
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 右：日期/车辆/公里等（✅改为一行一条 Label: Value） -->
+        <div class="col box" style="width: 260px">
+          <div class="p6 kv">
+            <span class="label">Date:</span>
+            <span class="value" id="hdrDate"></span>
+          </div>
+
+          <div class="gridline"></div>
+
+          <div class="p6 kv">
+            <span class="label">Vehicle No:</span>
+            <span class="value" id="hdrVehicle"></span>
+          </div>
+
+          <div class="gridline"></div>
+
+          <div class="p6 kv">
+            <span class="label">Start km:</span>
+            <span class="value" id="hdrStartKm"></span>
+          </div>
+
+          <div class="gridline"></div>
+
+          <div class="p6 kv">
+            <span class="label">End km:</span>
+            <span class="value" id="hdrEndKm"></span>
+          </div>
+
+          <div class="gridline"></div>
+
+          <div class="p6 kv">
+            <span class="label">Total km:</span>
+            <span class="value" id="hdrTotalKm"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== 小信息条：Shift + TDG ===== -->
+      <div class="row box">
+        <div class="col p6" style="width: 220px">
+          <div class="label">SHIFT TIME START</div>
+          <div class="value" id="hdrShiftStart"></div>
+        </div>
+
+        <div class="col p6 gridline-v" style="width: 220px">
+          <div class="label">SHIFT TIME FINISH</div>
+          <div class="value" id="hdrShiftFinish"></div>
+        </div>
+
+        <div class="col p6 gridline-v" style="width: 220px">
+          <div class="label">TDG START VOLUME(KGs)</div>
+          <div class="value" id="hdrTdgStart"></div>
+        </div>
+
+        <div class="col p6 gridline-v" style="flex: 1">
+          <div class="label">TDG REMAINING VOLUME(KGs)</div>
+          <div class="value" id="hdrTdgRemaining"></div>
+        </div>
+      </div>
+
+      <!-- ===== 主表格 ===== -->
+      <div class="box">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 50px">ARRIVE</th>
+              <th style="width: 350px">CUSTOMER/LOCATION OR ACTIVITY</th>
+              <th style="width: 90px">ACCOUNT #</th>
+              <th style="width: 60px">DELIVERED</th>
+              <th style="width: 80px">BALANCE(Lbs)</th>
+              <th>NOTES</th>
+            </tr>
+          </thead>
+          <tbody id="tbody">
+            <!-- JS 填行 -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ===== 底部声明 + 签名 ===== -->
+      <div class="box p8">
+        <div class="small tight">
+          I hereby declare that the contents of this consignment are fully and
+          accurately described above by the proper shipping name, are properly
+          classified and packaged, have dangerous goods safety marks properly
+          affixed or displayed on them, and are in all respects in proper
+          condition for transport according to the Transportation of Dangerous
+          Goods Regulations.
+        </div>
+        <div class="row" style="margin-top: 10px; gap: 10px">
+          <div class="col" style="flex: 1">
+            <div class="label">Consignor: (print employee name)</div>
+            <div class="box p6" style="min-height: 24px" id="sigPrint"></div>
+          </div>
+          <div class="col" style="flex: 1">
+            <div class="label">Signature:</div>
+            <div class="box p6" style="min-height: 24px" id="sigSign"></div>
+          </div>
+          <div class="col" style="width: 220px">
+            <div class="label">Date:</div>
+            <div class="box p6" style="min-height: 24px" id="sigDate"></div>
+          </div>
+        </div>
+        <div class="small muted" style="margin-top: 8px">
+          In the U.S. Call CHEMTREC at 1-800-424-9300 for emergency response
+          instructions.
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const safe = (v) => String(v ?? "").trim();
+      // Parse numbers like "1,234.56". Returns null when empty/invalid.
+      const parseNum = (v) => {
+        const s = String(v ?? "")
+          .replace(/,/g, "")
+          .trim();
+        if (!s) return null;
+        const n = Number(s);
+        return Number.isFinite(n) ? n : null;
+      };
+
+      // Format number for display (keeps up to 2 decimals, trims trailing zeros)
+      const formatNum = (n) => {
+        if (!Number.isFinite(n)) return "";
+        const rounded = Math.round(n * 100) / 100;
+        return String(rounded);
+      };
+      function pad2(n) {
+        return String(n).padStart(2, "0");
+      }
+
+      // Return HH:mm only (LOCAL TIME).
+      // Supports: ISO strings (with Z/offset), epoch ms, "HH:mm", Date objects, or parseable date strings.
+      function formatTime(v) {
+        if (v == null) return "";
+        const pad2 = (n) => String(n).padStart(2, "0");
+
+        // Date object
+        if (v instanceof Date && !isNaN(v)) {
+          return pad2(v.getHours()) + ":" + pad2(v.getMinutes());
+        }
+
+        const s = String(v).trim();
+        if (!s) return "";
+
+        // Already HH:mm (allow H:mm)
+        const m = s.match(/^(\d{1,2}):(\d{2})$/);
+        if (m) return pad2(m[1]) + ":" + m[2];
+
+        // ISO-ish
+        if (s.length >= 16 && s[10] === "T") return s.slice(11, 16);
+
+        // Numeric epoch
+        if (/^\d{10,13}$/.test(s)) {
+          const ms = s.length === 10 ? Number(s) * 1000 : Number(s);
+          const d = new Date(ms);
+          if (!isNaN(d)) return pad2(d.getHours()) + ":" + pad2(d.getMinutes());
+        }
+
+        // Try parse as date string
+        const t = Date.parse(s);
+        if (!Number.isNaN(t)) {
+          const d = new Date(t);
+          return pad2(d.getHours()) + ":" + pad2(d.getMinutes());
+        }
+
+        // Fallback: if string contains time like HH:mm somewhere
+        const m2 = s.match(/(\d{1,2}):(\d{2})/);
+        if (m2) return pad2(m2[1]) + ":" + m2[2];
+
+        return "";
+      }
+
+      function num(v) {
+        // robust number parsing: "1,000", "1000 L", "", null
+        const s = String(v == null ? "" : v)
+          .trim()
+          .replace(/,/g, "");
+        if (!s) return 0;
+        const m = s.match(/-?\d+(?:\.\d+)?/);
+        const n = m ? Number(m[0]) : Number(s);
+        return Number.isFinite(n) ? n : 0;
+      }
+
+      function buildRow(r) {
+        // 兼容你 current_detail.html 记录结构
+        const arrive = formatTime(
+          r.arrivalTime || r.arrive || r.completedAt || "",
+        ); // HH:mm
+        const customer = safe(
+          r.accountName || r.customerLocation || r.name || "",
+        );
+        const addr = safe(r.accountAddress || r.address || "");
+        const city = safe(r.accountCity || r.city || "");
+        const route = safe(r.accountRoute || r.route || r.routeType || "");
+        const acct = safe(r.accountNumber || r.account || "");
+        const delivered =
+          r.delivered != null ? safe(r.delivered) : safe(r.deliveredVolume);
+        const remaining =
+          r.remaining != null ? safe(r.remaining) : safe(r.remainingVolume);
+
+        const notes = safe(r.notes || r.note || "");
+        const loc = [customer, addr, city, route].filter(Boolean).join(" / ");
+
+        return {
+          arrive,
+          customerLocation: loc,
+          accountNumber: acct,
+          delivered: delivered,
+          balance: remaining,
+          notes,
+        };
+      }
+
+      function fill() {
+        let payload = null;
+        try {
+          payload = JSON.parse(
+            localStorage.getItem("tdg_export_payload_v1") || "null",
+          );
+        } catch {}
+
+        if (!payload) {
+          alert(
+            "未找到导出数据（tdg_export_payload_v1）。请从 Current Detail 点击 Export PDF 再打开本页。",
+          );
+          return;
+        }
+
+        const header = payload.header || {};
+        const records = Array.isArray(payload.records) ? payload.records : [];
+
+        // ===== 头部字段（含自动计算 totalKm）=====
+        const startKm = safe(header.startKm);
+        const endKm = safe(header.endKm);
+        const totalKm =
+          startKm !== "" && endKm !== ""
+            ? String(num(endKm) - num(startKm))
+            : safe(header.totalKm);
+
+        document.getElementById("hdrDate").textContent = safe(
+          header.date || header.dateIso?.slice(0, 10),
+        );
+        document.getElementById("hdrVehicle").textContent = safe(
+          header.vehicleNo,
+        );
+        document.getElementById("hdrStartKm").textContent = startKm;
+        document.getElementById("hdrEndKm").textContent = endKm;
+        document.getElementById("hdrTotalKm").textContent = totalKm;
+
+        document.getElementById("hdrShiftStart").textContent = safe(
+          header.shiftStart,
+        );
+        document.getElementById("hdrShiftFinish").textContent = safe(
+          header.shiftFinish,
+        );
+
+        // TDG START VOLUME
+        document.getElementById("hdrTdgStart").textContent = safe(
+          header.tdgVolume || header.tdgStartVolume || "",
+        );
+
+        // TDG REMAINING VOLUME：按“TDG START VOLUME - (Delivered/2) 累加”计算
+        const tdgStart = parseNum(
+          header.tdgVolume ?? header.tdgStartVolume ?? "",
+        );
+        let deliveredHalfSum = 0;
+        for (const r of records) {
+          const d = parseNum(
+            r.delivered ??
+              r.deliveredVolume ??
+              r.volumeDelivered ??
+              r.qtyDelivered ??
+              "",
+          );
+          if (d != null) deliveredHalfSum += d / 2;
+        }
+        const tdgRemain = tdgStart == null ? null : tdgStart - deliveredHalfSum;
+
+        document.getElementById("hdrTdgRemaining").textContent =
+          tdgRemain == null ? "" : String(Math.round(tdgRemain));
+
+        // 签名区
+        document.getElementById("sigPrint").textContent = safe(
+          header.driverName || header.consignorPrint || "",
+        );
+        document.getElementById("sigSign").textContent = safe(
+          header.signature || header.signatureText || "",
+        );
+        document.getElementById("sigDate").textContent = safe(
+          header.date || header.dateIso?.slice(0, 10),
+        );
+
+        // 产品勾选：
+        const hasAnyProductFlag =
+          Object.prototype.hasOwnProperty.call(header, "productOxygen") ||
+          Object.prototype.hasOwnProperty.call(header, "productNitrogen") ||
+          Object.prototype.hasOwnProperty.call(header, "productArgon") ||
+          Object.prototype.hasOwnProperty.call(header, "productCO2");
+
+        if (hasAnyProductFlag) {
+          document.getElementById("chkO2").checked = !!header.productOxygen;
+          document.getElementById("chkN2").checked = !!header.productNitrogen;
+          document.getElementById("chkAr").checked = !!header.productArgon;
+          document.getElementById("chkCO2").checked = !!header.productCO2;
+        } else {
+          document.getElementById("chkO2").checked = false;
+          document.getElementById("chkN2").checked = false;
+          document.getElementById("chkAr").checked = false;
+          document.getElementById("chkCO2").checked = true; // 默认 CO2
+        }
+
+        // ===== 表格 =====
+        const rows = records
+          .slice()
+          .sort((a, b) => {
+            const ta =
+              Date.parse(
+                a.arrivalTime ||
+                  a.completedAt ||
+                  a.updatedAt ||
+                  a.createdAt ||
+                  "",
+              ) || 0;
+            const tb =
+              Date.parse(
+                b.arrivalTime ||
+                  b.completedAt ||
+                  b.updatedAt ||
+                  b.createdAt ||
+                  "",
+              ) || 0;
+            return ta - tb; // oldest -> newest
+          })
+          .map(buildRow);
+
+        // Compute running balance
+        let running = num(header.tdgVolume || header.tdgStartVolume || 0);
+        for (let i = 0; i < rows.length; i++) {
+          const d = num(rows[i].delivered);
+          running = running - d;
+          rows[i].balance = String(Math.round(running * 100) / 100);
+        }
+
+        const tbody = document.getElementById("tbody");
+
+        const out = [];
+        for (let i = 0; i < rows.length; i++) {
+          const r = rows[i] || {};
+          out.push(`
+  <tr>
+    <td class="center">${safe(r.arrive)}</td>
+    <td>${safe(r.customerLocation)}</td>
+    <td class="center">${safe(r.accountNumber)}</td>
+    <td>${safe(r.delivered)}</td>
+    <td>${safe(r.balance)}</td>
+    <td>${safe(r.notes)}</td>
+  </tr>
+`);
+        }
+
+        tbody.innerHTML = out.join("");
+      }
+
+      document.addEventListener("DOMContentLoaded", () => {
+        document
+          .getElementById("btnPrint")
+          .addEventListener("click", () => window.print());
+        document
+          .getElementById("btnClose")
+          .addEventListener("click", () => window.close());
+        fill();
+      });
+    </script>
+  </body>
+</html>
