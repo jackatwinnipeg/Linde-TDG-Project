@@ -211,346 +211,350 @@
         </div>
       </main>
     </div>
+
+    <!-- ✅ 外部脚本：不要写进 <script>...</script> 里 -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="./js/supabaseConfig.js"></script>
     <script src="./js/supabaseClient.js"></script>
-
     <script src="./js/auth_supabase.js"></script>
+    <script src="./js/app_supabase.js"></script>
+
+    <!-- ✅ 页面脚本 -->
     <script>
-            const $ = (id) => document.getElementById(id);
-            const safe = (v) => String(v ?? "").trim();
-            const lower = (v) => safe(v).toLowerCase();
+      const $ = (id) => document.getElementById(id);
+      const safe = (v) => String(v ?? "").trim();
+      const lower = (v) => safe(v).toLowerCase();
 
-            const escapeHtml = (s) =>
-              String(s ?? "")
-                .replaceAll("&", "&amp;")
-                .replaceAll("<", "&lt;")
-                .replaceAll(">", "&gt;")
-                .replaceAll('"', "&quot;")
-                .replaceAll("'", "&#039;");
+      const escapeHtml = (s) =>
+        String(s ?? "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
 
-            // Storage keys (match your index.html)
-            const LS_RECORDS = "tdg_records_v3";
-            const LS_PENDING_SYNC = "tdg_pending_sync_v1";
+      // Storage keys (match your index.html)
+      const LS_RECORDS = "tdg_records_v3";
+      const LS_PENDING_SYNC = "tdg_pending_sync_v1";
 
-            // Paging
-            let page = 1;
-            const PAGE_SIZE = 20;
+      // Paging
+      let page = 1;
+      const PAGE_SIZE = 20;
 
-            // Driver directory (authoritative source: tdg_profiles)
-            // __TDG_DRIVERS__: [{driver_number, display_name}], __TDG_DRIVER_DIR__: Map(driver_number -> display_name)
-            window.__TDG_DRIVERS__ = window.__TDG_DRIVERS__ || [];
-            window.__TDG_DRIVER_DIR__ = window.__TDG_DRIVER_DIR__ || new Map();
+      // Driver directory (authoritative source: tdg_profiles)
+      // __TDG_DRIVERS__: [{driver_number, display_name}], __TDG_DRIVER_DIR__: Map(driver_number -> display_name)
+      window.__TDG_DRIVERS__ = window.__TDG_DRIVERS__ || [];
+      window.__TDG_DRIVER_DIR__ = window.__TDG_DRIVER_DIR__ || new Map();
 
-            async function loadDriversDirectory() {
-              try {
-                const sb = window.supabase || window.supabaseClient;
-                if (!sb) return [];
+      async function loadDriversDirectory() {
+        try {
+          const sb = window.supabase || window.supabaseClient;
+          if (!sb) return [];
 
-                const { data, error } = await sb
-                  .from("tdg_profiles")
-                  .select("driver_number, display_name")
-                  .eq("role", "driver")
-                  .eq("is_active", true)
-                  .order("display_name", { ascending: true });
+          const { data, error } = await sb
+            .from("tdg_profiles")
+            .select("driver_number, display_name")
+            .eq("role", "driver")
+            .eq("is_active", true)
+            .order("display_name", { ascending: true });
 
-                if (error) {
-                  console.warn("loadDriversDirectory error:", error);
-                  return [];
-                }
+          if (error) {
+            console.warn("loadDriversDirectory error:", error);
+            return [];
+          }
 
-                const list = Array.isArray(data) ? data : [];
-                window.__TDG_DRIVERS__ = list;
-                window.__TDG_DRIVER_DIR__ = new Map(
-                  list
-                    .filter((d) => d && d.driver_number)
-                    .map((d) => [safe(d.driver_number), safe(d.display_name || "")]),
-                );
-                return list;
-              } catch (e) {
-                console.warn("loadDriversDirectory exception:", e);
-                return [];
-              }
-            }
+          const list = Array.isArray(data) ? data : [];
+          window.__TDG_DRIVERS__ = list;
+          window.__TDG_DRIVER_DIR__ = new Map(
+            list
+              .filter((d) => d && d.driver_number)
+              .map((d) => [safe(d.driver_number), safe(d.display_name || "")]),
+          );
+          return list;
+        } catch (e) {
+          console.warn("loadDriversDirectory exception:", e);
+          return [];
+        }
+      }
 
-            function loadRecords() {
-              try {
-                const raw = localStorage.getItem(LS_RECORDS);
-                const list = raw ? JSON.parse(raw) : [];
-                return Array.isArray(list) ? list : [];
-              } catch {
-                return [];
-              }
-            }
+      function loadRecords() {
+        try {
+          const raw = localStorage.getItem(LS_RECORDS);
+          const list = raw ? JSON.parse(raw) : [];
+          return Array.isArray(list) ? list : [];
+        } catch {
+          return [];
+        }
+      }
 
-            function saveRecords(list) {
-              localStorage.setItem(LS_RECORDS, JSON.stringify(list));
-            }
+      function saveRecords(list) {
+        localStorage.setItem(LS_RECORDS, JSON.stringify(list));
+      }
 
-            // ---------------------------
-            // Remaining calculation (cumulative per driver+date)
-            // Rule:
-            // 1st record: remaining = tdgStart - delivered
-            // 2nd+: remaining = previous remaining - delivered
-            // ---------------------------
-            function computeRunningRemaining(list) {
-              // group key: driver + date
-              const groups = new Map();
-              for (const r of list) {
-                const driverKey = safe(r.driverNumber || "");
-                const dateKey = safe(r.date || "");
-                const k = driverKey + "|" + dateKey;
-                if (!groups.has(k)) groups.set(k, []);
-                groups.get(k).push(r);
-              }
+      // ---------------------------
+      // Remaining calculation (cumulative per driver+date)
+      // Rule:
+      // 1st record: remaining = tdgStart - delivered
+      // 2nd+: remaining = previous remaining - delivered
+      // ---------------------------
+      function computeRunningRemaining(list) {
+        // group key: driver + date
+        const groups = new Map();
+        for (const r of list) {
+          const driverKey = safe(r.driverNumber || "");
+          const dateKey = safe(r.date || "");
+          const k = driverKey + "|" + dateKey;
+          if (!groups.has(k)) groups.set(k, []);
+          groups.get(k).push(r);
+        }
 
-              for (const arr of groups.values()) {
-                arr.sort((a, b) =>
-                  safe(
-                    a.completedAt || a.arrivalTime || a.updatedAt || a.createdAt,
-                  ).localeCompare(
-                    safe(
-                      b.completedAt || b.arrivalTime || b.updatedAt || b.createdAt,
-                    ),
-                  ),
-                );
+        for (const arr of groups.values()) {
+          arr.sort((a, b) =>
+            safe(
+              a.completedAt || a.arrivalTime || a.updatedAt || a.createdAt,
+            ).localeCompare(
+              safe(
+                b.completedAt || b.arrivalTime || b.updatedAt || b.createdAt,
+              ),
+            ),
+          );
 
-                // prefer explicit tdgStart, else fall back to the first record's tdgVolume
-                const startVol = Number(arr[0]?.tdgStart ?? arr[0]?.tdgVolume ?? 0);
-                let running = startVol;
+          // prefer explicit tdgStart, else fall back to the first record's tdgVolume
+          const startVol = Number(arr[0]?.tdgStart ?? arr[0]?.tdgVolume ?? 0);
+          let running = startVol;
 
-                for (const r of arr) {
-                  const delivered = Number(r.deliveredVolume ?? r.delivered ?? 0);
-                  running = running - delivered;
-                  r.__remainingCalc = running;
-                }
-              }
+          for (const r of arr) {
+            const delivered = Number(r.deliveredVolume ?? r.delivered ?? 0);
+            running = running - delivered;
+            r.__remainingCalc = running;
+          }
+        }
 
-              return list;
-            }
+        return list;
+      }
 
-            function loadPending() {
-              try {
-                const raw = localStorage.getItem(LS_PENDING_SYNC);
-                const list = raw ? JSON.parse(raw) : [];
-                return Array.isArray(list) ? list : [];
-              } catch {
-                return [];
-              }
-            }
+      function loadPending() {
+        try {
+          const raw = localStorage.getItem(LS_PENDING_SYNC);
+          const list = raw ? JSON.parse(raw) : [];
+          return Array.isArray(list) ? list : [];
+        } catch {
+          return [];
+        }
+      }
 
-            function fmtTime(r) {
-              const t = r.arrivalTime || "";
-              if (!t) return "-";
-              return escapeHtml(String(t).slice(0, 19).replace("T", " "));
-            }
+      function fmtTime(r) {
+        const t = r.arrivalTime || "";
+        if (!t) return "-";
+        return escapeHtml(String(t).slice(0, 19).replace("T", " "));
+      }
 
-            function buildDriverOptions(records) {
-              const sel = $("driverFilter");
-              const cur = sel.value;
+      function buildDriverOptions(records) {
+        const sel = $("driverFilter");
+        const cur = sel.value;
 
-              // Prefer authoritative driver directory from Supabase (tdg_profiles)
-              if (
-                Array.isArray(window.__TDG_DRIVERS__) &&
-                window.__TDG_DRIVERS__.length
-              ) {
-                sel.innerHTML = '<option value="">All</option>';
-                window.__TDG_DRIVERS__.forEach((d) => {
-                  const dn = safe(d.driver_number || "");
-                  if (!dn) return;
-                  const name = safe(d.display_name || "");
-                  const opt = document.createElement("option");
-                  opt.value = dn; // filter by driver_number
-                  if (!name) return;
-                  opt.textContent = name; // ✅ only show driver name
-                  sel.appendChild(opt);
-                });
-                sel.value = cur;
-                return;
-              }
+        // Prefer authoritative driver directory from Supabase (tdg_profiles)
+        if (
+          Array.isArray(window.__TDG_DRIVERS__) &&
+          window.__TDG_DRIVERS__.length
+        ) {
+          sel.innerHTML = '<option value="">All</option>';
+          window.__TDG_DRIVERS__.forEach((d) => {
+            const dn = safe(d.driver_number || "");
+            if (!dn) return;
+            const name = safe(d.display_name || "");
+            const opt = document.createElement("option");
+            opt.value = dn; // filter by driver_number
+            if (!name) return;
+            opt.textContent = name; // ✅ only show driver name
+            sel.appendChild(opt);
+          });
+          sel.value = cur;
+          return;
+        }
 
-              // Fallback (offline): derive from records, but still only show driver name
-              const drivers = new Map();
-              records.forEach((r) => {
-                const dn = safe(r.driverNumber || "");
-                const name = safe(r.driverName || r.displayName || r.driver || "");
-                if (dn) drivers.set(dn, name);
-              });
+        // Fallback (offline): derive from records, but still only show driver name
+        const drivers = new Map();
+        records.forEach((r) => {
+          const dn = safe(r.driverNumber || "");
+          const name = safe(r.driverName || r.displayName || r.driver || "");
+          if (dn) drivers.set(dn, name);
+        });
 
-              sel.innerHTML = '<option value="">All</option>';
-              Array.from(drivers.entries())
-                .sort((a, b) => a[0].localeCompare(b[0]))
-                .forEach(([dn, name]) => {
-                  const opt = document.createElement("option");
-                  opt.value = dn;
-                  if (!name) return;
-                  opt.textContent = name;
-                  sel.appendChild(opt);
-                });
+        sel.innerHTML = '<option value="">All</option>';
+        Array.from(drivers.entries())
+          .sort((a, b) => a[0].localeCompare(b[0]))
+          .forEach(([dn, name]) => {
+            const opt = document.createElement("option");
+            opt.value = dn;
+            if (!name) return;
+            opt.textContent = name;
+            sel.appendChild(opt);
+          });
 
-              sel.value = cur;
-            }
+        sel.value = cur;
+      }
 
-            function calcKPIs(records) {
-              // Delivered (sum)
-              const delivered = records.reduce(
-                (sum, r) => sum + Number(r.deliveredVolume || r.delivered || 0),
-                0,
-              );
+      function calcKPIs(records) {
+        // Delivered (sum)
+        const delivered = records.reduce(
+          (sum, r) => sum + Number(r.deliveredVolume || r.delivered || 0),
+          0,
+        );
 
-              // TDG Volume: sum of starting TDG volume per driver
-              const byDriver = new Map();
-              records.forEach((r) => {
-                const key = safe(r.driverNumber || "");
-                if (!key) return;
-                const ts = safe(
-                  r.completedAt || r.arrivalTime || r.updatedAt || r.createdAt || "",
-                );
-                if (!byDriver.has(key)) byDriver.set(key, []);
-                byDriver.get(key).push({ r, ts });
-              });
+        // TDG Volume: sum of starting TDG volume per driver
+        const byDriver = new Map();
+        records.forEach((r) => {
+          const key = safe(r.driverNumber || "");
+          if (!key) return;
+          const ts = safe(
+            r.completedAt || r.arrivalTime || r.updatedAt || r.createdAt || "",
+          );
+          if (!byDriver.has(key)) byDriver.set(key, []);
+          byDriver.get(key).push({ r, ts });
+        });
 
-              let tdgVolumeTotal = 0;
-              for (const arr of byDriver.values()) {
-                arr.sort((a, b) => a.ts.localeCompare(b.ts));
-                const first = arr[0]?.r || {};
-                const startVol = Number(first.tdgStart ?? first.tdgVolume ?? 0);
-                tdgVolumeTotal += startVol;
-              }
+        let tdgVolumeTotal = 0;
+        for (const arr of byDriver.values()) {
+          arr.sort((a, b) => a.ts.localeCompare(b.ts));
+          const first = arr[0]?.r || {};
+          const startVol = Number(first.tdgStart ?? first.tdgVolume ?? 0);
+          tdgVolumeTotal += startVol;
+        }
 
-              // TDG REMAINING VOLUME(KGs) = TDG Volume - Delivered(sum)/2
-              const remainingKgs = tdgVolumeTotal - (delivered / 2);
+        // TDG REMAINING VOLUME(KGs) = TDG Volume - Delivered(sum)/2
+        const remainingKgs = tdgVolumeTotal - delivered / 2;
 
-              // ✅ 四舍五入取整数
-              $("kpiRecords").textContent = String(records.length);
-              $("kpiDelivered").textContent = String(Math.round(delivered));
-              $("kpiRemaining").textContent = String(Math.round(remainingKgs));
-              $("kpiPending").textContent = String(loadPending().length);
-            }
+        // ✅ 四舍五入取整数
+        $("kpiRecords").textContent = String(records.length);
+        $("kpiDelivered").textContent = String(Math.round(delivered));
+        $("kpiRemaining").textContent = String(Math.round(remainingKgs));
+        $("kpiPending").textContent = String(loadPending().length);
+      }
 
-            function recordMatches(r, q) {
-              if (!q) return true;
-              const hay = [
-                r.accountNumber,
-                r.accountName,
-                r.accountAddress,
-                r.accountCity,
-                r.accountRoute,
-                r.city,
-                r.route,
-                r.routeType,
-                r.driverNumber,
-                r.driverName,
-                r.username,
-                r.displayName,
-                r.notes,
-                r.note,
-              ]
-                .map(lower)
-                .join(" | ");
-              return hay.includes(q);
-            }
+      function recordMatches(r, q) {
+        if (!q) return true;
+        const hay = [
+          r.accountNumber,
+          r.accountName,
+          r.accountAddress,
+          r.accountCity,
+          r.accountRoute,
+          r.city,
+          r.route,
+          r.routeType,
+          r.driverNumber,
+          r.driverName,
+          r.username,
+          r.displayName,
+          r.notes,
+          r.note,
+        ]
+          .map(lower)
+          .join(" | ");
+        return hay.includes(q);
+      }
 
-            function syncBadge(r) {
-              // If record has synced flag/remoteId, show OK else Unknown
-              if (r.synced === true || r.remoteId)
-                return '<span class="chip ok">synced</span>';
-              if (r.synced === false)
-                return '<span class="chip danger">pending</span>';
-              return '<span class="chip">local</span>';
-            }
+      function syncBadge(r) {
+        // If record has synced flag/remoteId, show OK else Unknown
+        if (r.synced === true || r.remoteId)
+          return '<span class="chip ok">synced</span>';
+        if (r.synced === false)
+          return '<span class="chip danger">pending</span>';
+        return '<span class="chip">local</span>';
+      }
 
-            function normalizeForView(r) {
-              const tdg = Number(r.tdgVolume ?? 0);
-              const delivered = Number(r.deliveredVolume ?? r.delivered ?? 0);
+      function normalizeForView(r) {
+        const tdg = Number(r.tdgVolume ?? 0);
+        const delivered = Number(r.deliveredVolume ?? r.delivered ?? 0);
 
-              return {
-                ...r,
-                delivered: delivered,
-                // Remaining priority:
-                // 1) remainingAfter saved at record time (most accurate)
-                // 2) running calculation per driver+date (for old records)
-                // 3) fallback: tdgVolume - delivered (legacy single-record)
-                remaining: Number(
-                  r.remainingAfter ?? r.__remainingCalc ?? tdg - delivered,
-                ),
+        return {
+          ...r,
+          delivered: delivered,
+          // Remaining priority:
+          // 1) remainingAfter saved at record time (most accurate)
+          // 2) running calculation per driver+date (for old records)
+          // 3) fallback: tdgVolume - delivered (legacy single-record)
+          remaining: Number(r.remainingAfter ?? r.__remainingCalc ?? tdg - delivered),
 
-                city: safe(r.accountCity || r.city || ""),
-                route: safe(r.accountRoute || r.route || r.routeType || ""),
-                acct: safe(r.accountNumber || ""),
-                name: safe(r.accountName || ""),
-                addr: safe(r.accountAddress || ""),
-              };
-            }
+          city: safe(r.accountCity || r.city || ""),
+          route: safe(r.accountRoute || r.route || r.routeType || ""),
+          acct: safe(r.accountNumber || ""),
+          name: safe(r.accountName || ""),
+          addr: safe(r.accountAddress || ""),
+        };
+      }
 
-            function render() {
-              const all = computeRunningRemaining(loadRecords())
-                .map(normalizeForView)
-                .sort((a, b) =>
-                  safe(
-                    b.completedAt || b.arrivalTime || b.updatedAt || b.createdAt,
-                  ).localeCompare(
-                    safe(
-                      a.completedAt || a.arrivalTime || a.updatedAt || a.createdAt,
-                    ),
-                  ),
-                );
+      function render() {
+        const all = computeRunningRemaining(loadRecords())
+          .map(normalizeForView)
+          .sort((a, b) =>
+            safe(
+              b.completedAt || b.arrivalTime || b.updatedAt || b.createdAt,
+            ).localeCompare(
+              safe(
+                a.completedAt || a.arrivalTime || a.updatedAt || a.createdAt,
+              ),
+            ),
+          );
 
-              buildDriverOptions(all);
-              calcKPIs(all);
+        buildDriverOptions(all);
+        calcKPIs(all);
 
-              const q = lower($("q").value);
-              const driverKey = safe($("driverFilter").value);
+        const q = lower($("q").value);
+        const driverKey = safe($("driverFilter").value);
 
-              let filtered = all.filter((r) => recordMatches(r, q));
-              if (driverKey) {
-                filtered = filtered.filter(
-                  (r) => safe(r.driverNumber || "") === driverKey,
-                );
-              }
+        let filtered = all.filter((r) => recordMatches(r, q));
+        if (driverKey) {
+          filtered = filtered.filter((r) => safe(r.driverNumber || "") === driverKey);
+        }
 
-              const total = filtered.length;
-              const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-              page = Math.min(Math.max(1, page), totalPages);
+        const total = filtered.length;
+        const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+        page = Math.min(Math.max(1, page), totalPages);
 
-              const start = (page - 1) * PAGE_SIZE;
-              const items = filtered.slice(start, start + PAGE_SIZE);
+        const start = (page - 1) * PAGE_SIZE;
+        const items = filtered.slice(start, start + PAGE_SIZE);
 
-              $("pageChip").textContent = `Page ${page}/${totalPages}`;
-              $("pagerInfo").textContent = total
-                ? `Showing ${start + 1}-${Math.min(start + PAGE_SIZE, total)} of ${total}`
-                : "No records";
-              $("btnPrev").disabled = page === 1;
-              $("btnNext").disabled = page === totalPages;
+        $("pageChip").textContent = `Page ${page}/${totalPages}`;
+        $("pagerInfo").textContent = total
+          ? `Showing ${start + 1}-${Math.min(start + PAGE_SIZE, total)} of ${total}`
+          : "No records";
+        $("btnPrev").disabled = page === 1;
+        $("btnNext").disabled = page === totalPages;
 
-              const tbody = $("tbody");
-              if (!items.length) {
-                tbody.innerHTML =
-                  '<tr><td colspan="11" class="muted">No records.</td></tr>';
-                return;
-              }
+        const tbody = $("tbody");
+        if (!items.length) {
+          tbody.innerHTML = '<tr><td colspan="11" class="muted">No records.</td></tr>';
+          return;
+        }
 
-              tbody.innerHTML = items
-                .map((r, idx) => {
-                  const dn = safe(r.driverNumber || "");
-                  const driverName =
-                    safe(r.driverName || r.displayName || r.driver || "") ||
-                    safe(window.__TDG_DRIVER_DIR__?.get?.(dn) || "");
-                  // ✅ only show driver name (no number)
-                  const driver = escapeHtml(driverName);
-                  const acct = escapeHtml(r.acct);
-                  const nameAddr = `<div style="font-weight:800">${escapeHtml(r.name)}</div>
-                                      <div class="muted" style="margin-top:6px">${escapeHtml(r.addr)}</div>`;
-                  const delivered = escapeHtml(String(r.delivered));
-                  const remaining =
-                    r.remaining === "" ? "-" : escapeHtml(String(r.remaining));
-                  const notes = escapeHtml(safe(r.notes || r.note || ""));
-                  const city = escapeHtml(r.city);
-                  const route = escapeHtml(r.route);
+        tbody.innerHTML = items
+          .map((r, idx) => {
+            const dn = safe(r.driverNumber || "");
+            const driverName =
+              safe(r.driverName || r.displayName || r.driver || "") ||
+              safe(window.__TDG_DRIVER_DIR__?.get?.(dn) || "");
+            // ✅ only show driver name (no number)
+            const driver = escapeHtml(driverName);
+            const acct = escapeHtml(r.acct);
+            const nameAddr = `<div style="font-weight:800">${escapeHtml(
+              r.name,
+            )}</div>
+                                      <div class="muted" style="margin-top:6px">${escapeHtml(
+                                        r.addr,
+                                      )}</div>`;
+            const delivered = escapeHtml(String(r.delivered));
+            const remaining = r.remaining === "" ? "-" : escapeHtml(String(r.remaining));
+            const notes = escapeHtml(safe(r.notes || r.note || ""));
+            const city = escapeHtml(r.city);
+            const route = escapeHtml(r.route);
 
-                  return `
+            return `
                       <tr data-i="${start + idx}">
-                        <td>${fmtTime(r)}<div class="muted" style="margin-top:6px">${escapeHtml(safe(r.shift || r.tripType || ""))}</div></td>
+                        <td>${fmtTime(r)}<div class="muted" style="margin-top:6px">${escapeHtml(
+                          safe(r.shift || r.tripType || ""),
+                        )}</div></td>
                         <td>${driver || "-"}</td>
                         <td>${acct || "-"}</td>
                         <td>${nameAddr}</td>
@@ -565,215 +569,194 @@
                         </td>
                       </tr>
                     `;
-                })
-                .join("");
-            }
+          })
+          .join("");
+      }
 
-            function exportPdf() {
-              const list = loadRecords();
-              if (!list.length) return alert("No records to export.");
+      function exportPdf() {
+        const list = loadRecords();
+        if (!list.length) return alert("No records to export.");
 
-              // Build a simple header from current session + best-effort data
-              const sess = window.TDG_AUTH?.getSession?.() || {};
-              const dateIso = new Date().toISOString();
-              // Shift time should come from index page (sessionStorage). We'll only fall back to record timestamps if missing.
-              let shiftStart = "";
-              let shiftFinish = "";
-              // TDG start volume should come from index page (sessionStorage)
-              let tdgStartVolume = "";
-              // Best effort KM from local draft (index.html stores in tdg_draft_v3)
-              let startKm = "";
-              let endKm = "";
-              let totalKm = "";
-              try {
-                const draft = JSON.parse(
-                  localStorage.getItem("tdg_draft_v3") || "null",
-                );
-                if (draft) {
-                  if (draft.startKm != null && draft.startKm !== "")
-                    startKm = String(draft.startKm);
-                  if (draft.endKm != null && draft.endKm !== "")
-                    endKm = String(draft.endKm);
-                }
-              } catch {}
+        // Build a simple header from current session + best-effort data
+        const sess = window.TDG_AUTH?.getSession?.() || {};
+        const dateIso = new Date().toISOString();
+        // Shift time should come from index page (sessionStorage). We'll only fall back to record timestamps if missing.
+        let shiftStart = "";
+        let shiftFinish = "";
+        // TDG start volume should come from index page (sessionStorage)
+        let tdgStartVolume = "";
+        // Best effort KM from local draft (index.html stores in tdg_draft_v3)
+        let startKm = "";
+        let endKm = "";
+        let totalKm = "";
+        try {
+          const draft = JSON.parse(localStorage.getItem("tdg_draft_v3") || "null");
+          if (draft) {
+            if (draft.startKm != null && draft.startKm !== "") startKm = String(draft.startKm);
+            if (draft.endKm != null && draft.endKm !== "") endKm = String(draft.endKm);
+          }
+        } catch {}
 
-              if (startKm !== "" && endKm !== "") {
-                const t = Number(endKm) - Number(startKm);
-                totalKm = Number.isFinite(t) ? String(t) : "";
+        if (startKm !== "" && endKm !== "") {
+          const t = Number(endKm) - Number(startKm);
+          totalKm = Number.isFinite(t) ? String(t) : "";
+        }
+
+        // Also pull latest values from index page (sessionStorage state) if available
+        let idx = null;
+        try {
+          idx = JSON.parse(
+            sessionStorage.getItem("tdg_index_state_v2") ||
+              sessionStorage.getItem("tdg_index_state_v1") ||
+              "null",
+          );
+        } catch {}
+
+        const normStr = (v) => (v == null ? "" : String(v).trim());
+        const normKm = (v) => {
+          if (v == null) return "";
+          if (typeof v === "number") return v === 0 ? "" : String(v);
+          const s = String(v).trim();
+          return s === "0" ? "" : s;
+        };
+
+        if (idx && typeof idx === "object") {
+          // TDG volume
+          const tv = normStr(idx.tdgVolume);
+          if (tv) tdgStartVolume = tv;
+          // vehicle/kms
+          const vno = normStr(idx.vehicleNo);
+          if (vno) sess.vehicleNo = vno; // keep behavior consistent below
+
+          const sk = normKm(idx.startKm);
+          const ek = normKm(idx.endKm);
+          const tk = normKm(idx.totalKm);
+
+          if (sk !== "") startKm = sk;
+          if (ek !== "") endKm = ek;
+
+          // Prefer explicit shift times from index if present
+          const ss = normStr(idx.shiftTimeStart);
+          const sf = normStr(idx.shiftTimeFinish);
+          if (ss) shiftStart = ss;
+          if (sf) shiftFinish = sf;
+
+          // If totalKm not computed and index has it, use it
+          if ((!totalKm || totalKm === "") && tk !== "") totalKm = tk;
+        }
+
+        // Fallback: if index shift START time is missing, infer from record timestamps (FINISH must ONLY come from index Check-Out)
+        if (!shiftStart) {
+          const times = list
+            .map(
+              (r) =>
+                r.completedAt || r.arrivalTime || r.updatedAt || r.createdAt || "",
+            )
+            .filter(Boolean)
+            .sort();
+          shiftStart = times[0] ? times[0].slice(11, 16) : "";
+        }
+
+        const payload = {
+          header: {
+            dateIso,
+            date: new Date().toISOString().slice(0, 10),
+            vehicleNo: sess.vehicleNo || "",
+            startKm,
+            endKm,
+            totalKm,
+            shiftStart,
+            shiftFinish,
+            tdgStartVolume,
+            driverName: sess.displayName || sess.username || "",
+            consignorPrint: sess.displayName || sess.username || "",
+            signature: "",
+          },
+          records: list,
+        };
+
+        localStorage.setItem("tdg_export_payload_v1", JSON.stringify(payload));
+        window.open("./export_tdg_print_optimized.html", "_blank");
+      }
+
+      // Event wiring
+      document.addEventListener("DOMContentLoaded", async () => {
+        const sess = window.TDG_AUTH?.requireAuth?.();
+        if (!sess) return;
+
+        $("who").textContent = `当前登录：${sess.displayName || sess.username}（${sess.role}）`;
+
+        $("btnBack").addEventListener("click", () => {
+          // 尽量使用 history.back()，可保留 index 页输入状态（bfcache）
+          if (document.referrer && document.referrer.indexOf("index.html") !== -1) {
+            history.back();
+          } else {
+            history.back();
+            // 若没有历史记录（例如直接打开此页），再回退到 index
+            setTimeout(() => {
+              if (location.pathname.toLowerCase().includes("current_detail")) {
+                window.location.href = "./index.html";
               }
+            }, 250);
+          }
+        });
+        $("btnLogout").addEventListener("click", () => window.TDG_AUTH.logout());
+        $("btnExport").addEventListener("click", exportPdf);
 
-              // Also pull latest values from index page (sessionStorage state) if available
-              let idx = null;
-              try {
-                idx = JSON.parse(
-                  sessionStorage.getItem("tdg_index_state_v2") ||
-                    sessionStorage.getItem("tdg_index_state_v1") ||
-                    "null",
-                );
-              } catch {}
+        $("btnClear").addEventListener("click", () => {
+          if (!confirm("⚠️确定清空所有送货记录？（不可恢复）")) return;
+          localStorage.removeItem(LS_RECORDS);
+          render();
+          alert("已清空。");
+        });
 
-              const normStr = (v) => (v == null ? "" : String(v).trim());
-              const normKm = (v) => {
-                if (v == null) return "";
-                if (typeof v === "number") return v === 0 ? "" : String(v);
-                const s = String(v).trim();
-                return s === "0" ? "" : s;
-              };
+        $("q").addEventListener(
+          "input",
+          () => {
+            page = 1;
+            render();
+          },
+          { passive: true },
+        );
+        $("driverFilter").addEventListener(
+          "change",
+          () => {
+            page = 1;
+            render();
+          },
+          { passive: true },
+        );
 
-              if (idx && typeof idx === "object") {
-                // TDG volume
-                const tv = normStr(idx.tdgVolume);
-                if (tv) tdgStartVolume = tv;
-                // vehicle/kms
-                const vno = normStr(idx.vehicleNo);
-                if (vno) sess.vehicleNo = vno; // keep behavior consistent below
+        $("btnPrev").addEventListener("click", () => {
+          page = Math.max(1, page - 1);
+          render();
+        });
+        $("btnNext").addEventListener("click", () => {
+          page = page + 1;
+          render();
+        });
 
-                const sk = normKm(idx.startKm);
-                const ek = normKm(idx.endKm);
-                const tk = normKm(idx.totalKm);
+        // ✅ 更稳健：点击按钮内部元素也能命中
+        document.addEventListener("click", (e) => {
+          const b = e.target.closest("button[data-act]");
+          if (!b) return;
+          const act = b.getAttribute("data-act");
+          if (act !== "del") return;
 
-                if (sk !== "") startKm = sk;
-                if (ek !== "") endKm = ek;
+          const idx = Number(b.getAttribute("data-idx"));
+          const list = loadRecords();
+          if (!(idx >= 0 && idx < list.length)) return alert("Record not found.");
+          const r = list[idx];
+          const label = safe(r.accountNumber || "") + " / " + safe(r.accountName || "");
+          if (!confirm("Delete record: " + label + " ?")) return;
+          list.splice(idx, 1);
+          saveRecords(list);
+          render();
+        });
 
-                // Prefer explicit shift times from index if present
-                const ss = normStr(idx.shiftTimeStart);
-                const sf = normStr(idx.shiftTimeFinish);
-                if (ss) shiftStart = ss;
-                if (sf) shiftFinish = sf;
-
-                // If totalKm not computed and index has it, use it
-                if ((!totalKm || totalKm === "") && tk !== "") totalKm = tk;
-              }
-
-              // Fallback: if index shift START time is missing, infer from record timestamps (FINISH must ONLY come from index Check-Out)
-              if (!shiftStart) {
-                const times = list
-                  .map(
-                    (r) =>
-                      r.completedAt ||
-                      r.arrivalTime ||
-                      r.updatedAt ||
-                      r.createdAt ||
-                      "",
-                  )
-                  .filter(Boolean)
-                  .sort();
-                shiftStart = times[0] ? times[0].slice(11, 16) : "";
-              }
-
-              const payload = {
-                header: {
-                  dateIso,
-                  date: new Date().toISOString().slice(0, 10),
-                  vehicleNo: sess.vehicleNo || "",
-                  startKm,
-                  endKm,
-                  totalKm,
-                  shiftStart,
-                  shiftFinish,
-                  tdgStartVolume,
-                  driverName: sess.displayName || sess.username || "",
-                  consignorPrint: sess.displayName || sess.username || "",
-                  signature: "",
-                },
-                records: list,
-              };
-
-              localStorage.setItem("tdg_export_payload_v1", JSON.stringify(payload));
-              window.open("./export_tdg_print_optimized.html", "_blank");
-            }
-
-            // Event wiring
-            document.addEventListener("DOMContentLoaded", async () => {
-              const sess = window.TDG_AUTH?.requireAuth?.();
-              if (!sess) return;
-
-              $("who").textContent =
-                `当前登录：${sess.displayName || sess.username}（${sess.role}）`;
-
-              $("btnBack").addEventListener("click", () => {
-                // 尽量使用 history.back()，可保留 index 页输入状态（bfcache）
-                if (
-                  document.referrer &&
-                  document.referrer.indexOf("index.html") !== -1
-                ) {
-                  history.back();
-                } else {
-                  history.back();
-                  // 若没有历史记录（例如直接打开此页），再回退到 index
-                  setTimeout(() => {
-                    if (location.pathname.toLowerCase().includes("current_detail")) {
-                      window.location.href = "./index.html";
-                    }
-                  }, 250);
-                }
-              });
-              $("btnLogout").addEventListener("click", () =>
-                window.TDG_AUTH.logout(),
-              );
-              $("btnExport").addEventListener("click", exportPdf);
-
-              $("btnClear").addEventListener("click", () => {
-                if (!confirm("⚠️确定清空所有送货记录？（不可恢复）")) return;
-                localStorage.removeItem(LS_RECORDS);
-                render();
-                alert("已清空。");
-              });
-
-              $("q").addEventListener(
-                "input",
-                () => {
-                  page = 1;
-                  render();
-                },
-                { passive: true },
-              );
-              $("driverFilter").addEventListener(
-                "change",
-                () => {
-                  page = 1;
-                  render();
-                },
-                { passive: true },
-              );
-
-              $("btnPrev").addEventListener("click", () => {
-                page = Math.max(1, page - 1);
-                render();
-              });
-              $("btnNext").addEventListener("click", () => {
-                page = page + 1;
-                render();
-              });
-
-              document.addEventListener("click", (e) => {
-                const b = e.target.closest("button[data-act]");
-                if (!b) return;
-                const act = b.getAttribute("data-act");
-                if (act !== "del") return;
-
-                const idx = Number(b.getAttribute("data-idx"));
-                const list = loadRecords();
-                if (!(idx >= 0 && idx < list.length))
-                  return alert("Record not found.");
-                const r = list[idx];
-                const label =
-                  safe(r.accountNumber || "") + " / " + safe(r.accountName || "");
-                if (!confirm("Delete record: " + label + " ?")) return;
-                list.splice(idx, 1);
-                saveRecords(list);
-                render();
-              });
-
-              await loadDriversDirectory();
-
-              render();
-            });
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/supabaseConfig.js"></script>
-<script src="js/supabaseClient.js"></script>
-<script src="js/auth_supabase.js"></script>
-<script src="js/app_supabase.js"></script>
+        await loadDriversDirectory();
+        render();
+      });
     </script>
   </body>
 </html>
