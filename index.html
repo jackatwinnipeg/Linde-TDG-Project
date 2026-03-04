@@ -10,7 +10,6 @@
     <meta name="theme-color" content="#0b1020" />
 
     <meta name="apple-mobile-web-app-capable" content="yes" />
-
     <meta name="mobile-web-app-capable" content="yes" />
     <meta
       name="apple-mobile-web-app-status-bar-style"
@@ -23,6 +22,8 @@
     <link rel="stylesheet" href="./css/style.css" />
 
     <title>Ez-Lazy TDG Daily Log</title>
+
+    <!-- 你原有 toast / disable 样式保留，但把 weekCycleRow 的 inline 结构换成 id=weekCycleRow 统一控制 -->
     <style>
       .toast {
         position: fixed;
@@ -51,14 +52,6 @@
       .btn:disabled {
         opacity: 0.5;
         cursor: not-allowed;
-      }
-      #weekCycleRow {
-        display: flex;
-        gap: 8px;
-        align-items: center;
-      }
-      #weekCycleRow select {
-        flex: 1;
       }
     </style>
   </head>
@@ -91,6 +84,7 @@
           <div class="hd">
             <div style="display: flex; gap: 8px; flex-wrap: wrap"></div>
           </div>
+
           <div class="bd">
             <div class="grid2">
               <div>
@@ -103,7 +97,7 @@
               </div>
             </div>
 
-            <div class="grid3" style="margin-top: 10px">
+            <div class="grid3 mt12">
               <div>
                 <label for="date">Date</label>
                 <input id="date" type="date" />
@@ -123,7 +117,8 @@
                 />
               </div>
             </div>
-            <div class="grid3" style="margin-top: 12px">
+
+            <div class="grid3 mt12">
               <div>
                 <label for="startKm">Start KM</label>
                 <input
@@ -158,10 +153,13 @@
                 />
               </div>
             </div>
-            <div style="margin-top: 12px">
+
+            <div class="mt12">
               <label for="weekCycle">Week Cycle</label>
-              <div style="display: flex; gap: 80px; align-items: center">
-                <select id="weekCycle" style="flex: 1; max-width: 120px">
+
+              <!-- ✅ 改成 #weekCycleRow，避免 wrap/错位，统一由 CSS 控制 -->
+              <div id="weekCycleRow">
+                <select id="weekCycle">
                   <option value="1">1</option>
                   <option value="2">2</option>
                   <option value="3">3</option>
@@ -179,6 +177,7 @@
                   Check-out
                 </button>
               </div>
+
               <div class="help" id="shiftTimeText" style="margin-top: 6px">
                 Shift Time：—
               </div>
@@ -207,7 +206,7 @@
               </div>
             </div>
 
-            <div style="margin-top: 12px">
+            <div class="mt12">
               <label for="accountAddress">Account Address</label>
               <input
                 id="accountAddress"
@@ -216,7 +215,8 @@
                 placeholder="Auto/Manual Fill-in"
               />
             </div>
-            <div class="grid2" style="margin-top: 12px">
+
+            <div class="grid2 mt12">
               <div>
                 <label for="accountCity">City</label>
                 <input
@@ -236,7 +236,8 @@
                 />
               </div>
             </div>
-            <div class="grid2" style="margin-top: 12px">
+
+            <div class="grid2 mt12">
               <div>
                 <div style="margin-bottom: 10px">
                   <button
@@ -247,11 +248,7 @@
                   >
                     Confirm Arrive
                   </button>
-                  <div
-                    class="help"
-                    id="arrivalTimeText"
-                    style="margin-top: 6px"
-                  >
+                  <div class="help" id="arrivalTimeText" style="margin-top: 6px">
                     Arrival Time：—
                   </div>
                 </div>
@@ -307,13 +304,8 @@
           </div>
 
           <div class="bd">
-            <label for="searchBox"
-              >ACC No. / Customer Name / Address Search</label
-            >
-            <input
-              id="searchBox"
-              placeholder="Example：1001 / Hydro / Winnipeg"
-            />
+            <label for="searchBox">ACC No. / Customer Name / Address Search</label>
+            <input id="searchBox" placeholder="Example：1001 / Hydro / Winnipeg" />
 
             <div style="display: flex; gap: 8px; margin-top: 10px">
               <button class="btn" id="btnSearch" type="button">Search</button>
@@ -329,9 +321,7 @@
               <div class="muted">还没有搜索。你可以先点“加载演示客户库”。</div>
             </div>
 
-            <div
-              style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px"
-            >
+            <div class="panel-actions" style="margin-top: 16px">
               <button class="btn secondary" id="btnToday" type="button">
                 Current Details
               </button>
@@ -349,11 +339,14 @@
       <strong id="toastTitle"></strong>
       <p id="toastMsg"></p>
     </div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script defer src="./js/supabaseConfig.js"></script>
-<script defer src="./js/supabaseClient.js"></script>
-<script defer src="./js/auth_supabase.js"></script>
-<script defer src="./js/app_supabase.js"></script>
-<!-- 3) 再加载你的脚本 -->
-</body>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script defer src="./js/supabaseConfig.js"></script>
+    <script defer src="./js/supabaseClient.js"></script>
+    <script defer src="./js/auth_supabase.js"></script>
+    <script defer src="./js/app_supabase.js"></script>
+
+    <!-- ✅ 新增：只负责 UI 的增强，不碰你的 Supabase 业务逻辑 -->
+    <script defer src="./js/uiEnhancements.js"></script>
+  </body>
 </html>
