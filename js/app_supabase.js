@@ -980,7 +980,25 @@ async function uploadFinalDailyLogAndOffDuty(reason = "off_duty") {
         saveIndexState();
       }
 
-      function saveDraft() {
+      
+      // Save draft without toast (used before navigating to other pages)
+      function saveDraftSilently() {
+        try {
+          const d = getFormData();
+          const records = getRecords();
+          const baseTdg = Number($("tdgVolume")?.value || 0);
+          const cal = computeRemainingTDG(baseTdg, records);
+          d.remainingVolume = cal.remaining;
+          localStorage.setItem(LS_DRAFT, JSON.stringify(d));
+          saveYesterdayForDriver(getDriverKeySafe(), d);
+          // also keep session state
+          saveIndexState();
+        } catch (e) {
+          console.warn("saveDraftSilently failed:", e);
+        }
+      }
+
+function saveDraft() {
         const d = getFormData();
         // compute remaining for yesterday autofill
         const records = getRecords();
@@ -1242,7 +1260,7 @@ async function uploadFinalDailyLogAndOffDuty(reason = "off_duty") {
         });
 
         $("btnToday")?.addEventListener("click", () => {
-          saveIndexState();
+          saveDraftSilently();
           window.location.href = "./Current_Detail.html";
         });
 
@@ -1294,12 +1312,7 @@ async function uploadFinalDailyLogAndOffDuty(reason = "off_duty") {
 
         // Auto-sync customers from server (best-effort)
         // If offline / not logged in, it will silently keep using localStorage customers.
-        // ✅ Daily customers sync from Supabase -> localStorage
-        if (window.TDG_SYNC?.ensureDailyCustomersSync) {
-          window.TDG_SYNC.ensureDailyCustomersSync({ force: false }).catch((e) => {
-            console.warn("Daily customers sync failed; using local cache.", e);
-          });
-        }
+        syncCustomersFromServer({ silent: true });
       });
 
 
