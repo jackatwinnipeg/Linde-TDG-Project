@@ -1294,7 +1294,12 @@ async function uploadFinalDailyLogAndOffDuty(reason = "off_duty") {
 
         // Auto-sync customers from server (best-effort)
         // If offline / not logged in, it will silently keep using localStorage customers.
-        syncCustomersFromServer({ silent: true });
+        // ✅ Daily customers sync from Supabase -> localStorage
+        if (window.TDG_SYNC?.ensureDailyCustomersSync) {
+          window.TDG_SYNC.ensureDailyCustomersSync({ force: false }).catch((e) => {
+            console.warn("Daily customers sync failed; using local cache.", e);
+          });
+        }
       });
 
 

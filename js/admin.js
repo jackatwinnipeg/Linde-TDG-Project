@@ -238,7 +238,7 @@ const CUST_PAGE_SIZE = 5;  // 每页 5 条
       list() {
         return sanitizeCustomers(loadCustomers());
       },
-      create(payload) {
+      async create(payload) {
         const list = loadCustomers();
         const c = normalizeCustomerPayload(payload);
 
@@ -249,9 +249,15 @@ const CUST_PAGE_SIZE = 5;  // 每页 5 条
 
         list.push(c);
         saveCustomers(list);
+
+        // ✅ sync to Supabase (accountNumber is UNIQUE)
+        if (window.TDG_SYNC?.upsertCustomer) {
+          await window.TDG_SYNC.upsertCustomer(c);
+        }
+
         return sanitizeCustomers([c])[0];
       },
-      update(index, patch) {
+      async update(index, patch) {
         const list = loadCustomers();
         assertOrThrow(index >= 0 && index < list.length, "客户不存在");
 
@@ -267,71 +273,29 @@ const CUST_PAGE_SIZE = 5;  // 每页 5 条
 
         list[index] = next;
         saveCustomers(list);
+
+        // ✅ sync to Supabase
+        if (window.TDG_SYNC?.upsertCustomer) {
+          await window.TDG_SYNC.upsertCustomer(next);
+        }
+
         return sanitizeCustomers([next])[0];
       },
-      remove(index) {
+      async remove(index) {
         const list = loadCustomers();
         assertOrThrow(index >= 0 && index < list.length, "客户不存在");
+
+        const acct = safe(list[index]?.accountNumber);
+
         list.splice(index, 1);
         saveCustomers(list);
+
+        // ✅ delete from Supabase
+        if (window.TDG_SYNC?.deleteCustomer) {
+          await window.TDG_SYNC.deleteCustomer(acct);
+        }
+
         return true;
-      },
-      importFromCsvText(csvText) {
-        const rows = parseCsv(csvText);
-        assertOrThrow(rows.length > 0, "CSV 没有数据");
-
-        const mapped = rows
-  .map((r) => ({
-    accountNumber: safe(
-      r.accountNumber ??
-        r.accountNo ??
-        r.no ??
-        r.Position ??                 // ✅ 你的CSV常用：Position
-        r["Account Number"] ??
-        r["AccountNo"] ??
-        ""
-    ),
-    accountName: safe(
-      r.accountName ??
-        r.name ??
-        r["Customer Name"] ??         // ✅ 你的CSV常用：Customer Name
-        r["Account Name"] ??
-        ""
-    ),
-    accountAddress: safe(
-      r.accountAddress ??
-        r.address ??
-        r.Address ??                  // ✅ 你的CSV常用：Address
-        r["Account Address"] ??
-        ""
-    ),
-    city: safe(
-      r.city ??
-        r.City ??                     // ✅ 你的CSV常用：City
-        ""
-    ),
-    route: safe(
-      r.route ??
-        r.Route ??                    // ✅ 你的CSV常用：Route
-        ""
-    ),
-  }))
-  .filter((x) => x.accountNumber && x.accountName);
-
-        assertOrThrow(
-          mapped.length > 0,
-          "CSV 缺少必要字段（Account Number / Name）"
-        );
-
-        const existing = loadCustomers();
-        const byNo = new Map(existing.map((c) => [safe(c.accountNumber), c]));
-        for (const c of mapped) byNo.set(c.accountNumber, c);
-
-        const merged = Array.from(byNo.values()).sort((a, b) =>
-          safe(a.accountNumber).localeCompare(safe(b.accountNumber))
-        );
-        saveCustomers(merged);
-        return merged.length;
       },
     },
   };
@@ -876,7 +840,7 @@ const rows = pageItems
       { onClose: renderAll }
     );
     $("btnCancel").onclick = () => modal.close();
-    $("btnSave").onclick = () => {
+    $("btnSave").onclick = async () => {
       try {
        const payload = {
        accountNumber: safe($("c_no").value),
@@ -885,7 +849,7 @@ const rows = pageItems
        city: safe($("c_city").value),
        route: safe($("c_route").value),
     };
-        Api.customers.create(payload);
+        await Api.customers.create(payload);
         modal.close();
         alert("已创建");
       } catch (e) {
@@ -905,7 +869,7 @@ const rows = pageItems
       { onClose: renderAll }
     );
     $("btnCancel").onclick = () => modal.close();
-    $("btnSave").onclick = () => {
+    $("btnSave").onclick = async () => {
       try {
         const patch = {
           accountNumber: safe($("c_no").value),
@@ -914,7 +878,7 @@ const rows = pageItems
           city: safe($("c_city").value),
           route: safe($("c_route").value),
         };
-        Api.customers.update(index, patch);
+        await Api.customers.update(index, patch);
         modal.close();
         alert("已保存");
       } catch (e) {
@@ -923,14 +887,14 @@ const rows = pageItems
     };
   }
 
-  function deleteCustomer(index) {
+  async function deleteCustomer(index) {
     const list = Api.customers.list();
     const c = list[index];
     if (!c) return alert("客户不存在");
     if (!confirm(`确定删除客户：${c.accountNumber} / ${c.accountName} ?`))
       return;
     try {
-      Api.customers.remove(index);
+      await Api.customers.remove(index);
       alert("已删除");
       renderAll();
     } catch (e) {
@@ -996,5 +960,17 @@ const rows = pageItems
     renderCustomers();
   }
 
-  renderAll();
+  async function boot() {
+    // ✅ Daily pull of latest customers (first visit of the day)
+    try {
+      if (window.TDG_SYNC?.ensureDailyCustomersSync) {
+        await window.TDG_SYNC.ensureDailyCustomersSync({ force: false });
+      }
+    } catch (e) {
+      console.warn("Daily customers sync failed; using local cache.", e);
+    }
+    renderAll();
+  }
+
+  boot();
 })();
