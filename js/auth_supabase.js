@@ -213,6 +213,19 @@
       // Keep legacy profile key in localStorage for other pages
       syncProfileToLegacyLS();
 
+
+      // ✅ Pre-download customers from Supabase into localStorage for admin.js (offline-first)
+      try {
+        if (window.TDG_SYNC?.downloadCustomersToLocal) {
+          const n = await window.TDG_SYNC.downloadCustomersToLocal();
+          console.log("[TDG] customers synced to local cache:", n);
+        } else {
+          console.warn("[TDG] TDG_SYNC not found - did you include /js/supabaseSync.js?");
+        }
+      } catch (syncErr) {
+        console.warn("[TDG] customers sync failed, falling back to existing local cache:", syncErr);
+      }
+
       return { ok: true, user: profile || { id: userId, username: u } };
     } catch (e) {
       // Continue to legacy fallback only if Supabase not configured / offline
