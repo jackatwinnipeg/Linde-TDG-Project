@@ -461,3 +461,19 @@ input, select, textarea, button {
     width: 100%;
   }
 }
+/* 让 date 输入框跟其它输入框（例如 Driver's Number）一样占满所在格子 */
+#date {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+
+  /* iOS Safari: 避免原生样式造成不可压缩宽度 */
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* 确保 grid 子项允许收缩（否则 iOS 会溢出导致重叠） */
+.grid2 > *, .grid3 > * {
+  min-width: 0;
+}
