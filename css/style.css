@@ -423,3 +423,41 @@ table tbody td:nth-child(6),
 table thead th:nth-child(6) {
   text-align: center;
 }
+/* --- iPad / 小屏：防止 grid 子项溢出造成重叠 --- */
+.grid2, .grid3 {
+  display: grid;
+  gap: 12px;
+}
+
+.grid2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.grid3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+/* 关键：允许 grid item 收缩，否则 iOS Safari 容易溢出覆盖 */
+.grid2 > *, .grid3 > * {
+  min-width: 0;
+}
+
+input, select, textarea, button {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* --- 在 iPad/窄屏时：把 3 列/2 列改成 1 列或 2 列 --- */
+@media (max-width: 900px) {
+  .grid3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 640px) {
+  .grid2, .grid3 { grid-template-columns: 1fr; }
+}
+
+/* --- 如果你的 .layout 是左右两栏（section + aside），小屏改成上下布局 --- */
+@media (max-width: 980px) {
+  .layout {
+    display: block; /* 或 flex-direction: column; 取决于你原本怎么写 */
+  }
+  .layout > section,
+  .layout > aside {
+    width: 100%;
+  }
+}
