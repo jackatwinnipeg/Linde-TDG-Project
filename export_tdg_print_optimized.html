@@ -508,7 +508,7 @@
 
         // TDG START VOLUME
         document.getElementById("hdrTdgStart").textContent = safe(
-          header.tdgVolume || header.tdgStartVolume || "",
+          header.tdgVolume ?? header.tdgStartVolume ?? "",
         );
 
         // TDG REMAINING VOLUME：按“TDG START VOLUME - (Delivered/2) 累加”计算
