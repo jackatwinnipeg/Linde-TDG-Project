@@ -581,21 +581,23 @@
               // Shift time should come from index page (sessionStorage). We'll only fall back to record timestamps if missing.
               let shiftStart = "";
               let shiftFinish = "";
-              // TDG start volume should come from index page (sessionStorage)
+              // TDG start volume should come from index page (sessionStorage),
+              // but we also fall back to local draft / first record so print page can always render it.
               let tdgStartVolume = "";
-              // Best effort KM from local draft (index.html stores in tdg_draft_v3)
+              // Best effort KM / TDG volume from local draft (index.html stores in tdg_draft_v3)
               let startKm = "";
               let endKm = "";
               let totalKm = "";
+              let draft = null;
               try {
-                const draft = JSON.parse(
-                  localStorage.getItem("tdg_draft_v3") || "null",
-                );
+                draft = JSON.parse(localStorage.getItem("tdg_draft_v3") || "null");
                 if (draft) {
                   if (draft.startKm != null && draft.startKm !== "")
                     startKm = String(draft.startKm);
                   if (draft.endKm != null && draft.endKm !== "")
                     endKm = String(draft.endKm);
+                  if (draft.tdgVolume != null && draft.tdgVolume !== "")
+                    tdgStartVolume = String(draft.tdgVolume);
                 }
               } catch {}
 
@@ -621,6 +623,13 @@
                 const s = String(v).trim();
                 return s === "0" ? "" : s;
               };
+              const pickFirstNonEmpty = (...vals) => {
+                for (const v of vals) {
+                  const s = normStr(v);
+                  if (s !== "") return s;
+                }
+                return "";
+              };
 
               if (idx && typeof idx === "object") {
                 // TDG volume
@@ -645,6 +654,16 @@
 
                 // If totalKm not computed and index has it, use it
                 if ((!totalKm || totalKm === "") && tk !== "") totalKm = tk;
+              }
+
+              // Fallback for TDG start volume: session -> local draft -> first record
+              if (!tdgStartVolume) {
+                const firstRecord = Array.isArray(list) && list.length ? list[0] : null;
+                tdgStartVolume = pickFirstNonEmpty(
+                  draft?.tdgVolume,
+                  firstRecord?.tdgStart,
+                  firstRecord?.tdgVolume,
+                );
               }
 
               // Fallback: if index shift START time is missing, infer from record timestamps (FINISH must ONLY come from index Check-Out)
@@ -674,6 +693,7 @@
                   shiftStart,
                   shiftFinish,
                   tdgStartVolume,
+                  tdgVolume: tdgStartVolume,
                   driverName: sess.displayName || sess.username || "",
                   consignorPrint: sess.displayName || sess.username || "",
                   signature: "",
